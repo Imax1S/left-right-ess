@@ -1,0 +1,16 @@
+{
+  "sourceCommit": "dede8a6dca21b635be96222e642ab8bb39d43ee2",
+  "sourceChanges": "Documentation-only working changes are not published.",
+  "files": {
+    ".nojekyll": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "LICENSE-THE-PUDDING.txt": "2fe076f6b3569cf93682beb544e8bf5e308c7659dc75f518a51c2ded71adcf00",
+    "README.md": "2aab3fdb1e036e4c91d6a3eeebad88effc4794b2cb94013b97579b53adc6feca",
+    "assets/city-overhead-wide-BGYuMmzX.webp": "64477aea1a24ed3116aafd069c8f4307a9a96c561e751aaadafd6ad9db653fba",
+    "assets/index-6nCkQY7s.css": "205d945919ad94f3825e434bf3e9fdf1b1b62b7475c2ce5a2fe15fdf999fbdf1",
+    "assets/index-dekkCmeO.js": "a76091d1cf6ec607f1f9ec65dfa424919aaf31a91c3eacb65bbc93f7750dc3e6",
+    "assets/ink-wear-CsbDwsho.webp": "d475d0f4099cba1266a483d3277f2eadd2937903bca63cc2b0cec4e8d059df59",
+    "assets/questionnaire-pages-BedOyPGv.webp": "2e76c908950b775465c2e69c63a5b65a47d846144dbd7738c682aed011f7fb4a",
+    "assets/scroll-city-v3-DBetX93l.webp": "c9a87264ee871ae14f36aa5ca98e97ddaaaa69cb14443dd86bf1eef726b09ba0",
+    "index.html": "bab991533b1905922f878640d3ead442aa52c986e50c594046a955ba66ee2787"
+  }
+}
