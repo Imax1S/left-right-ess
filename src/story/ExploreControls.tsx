@@ -13,10 +13,10 @@ interface Props {
 }
 
 export function ExploreControls({ countries, dots, selection, onSelect, onStart }: Props) {
-  const [open, setOpen] = useState<HighlightKey>('country');
+  const [open, setOpen] = useState<HighlightKey | null>(null);
   const facets = [
-    { key: 'country' as const, label: 'Country', options: countries.map(({ code, name }) => ({ value: code, label: name })) },
     ...profileFacets.filter(facet => dots.some(dot => dot.profile?.[facet.key] !== undefined)),
+    { key: 'country' as const, label: 'Country', options: countries.map(({ code, name }) => ({ value: code, label: name })) },
   ];
   const active = facets.find(facet => facet.key === open) ?? facets[0];
   const selectedLabel = facets.find(facet => facet.key === selection?.key)
