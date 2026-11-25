@@ -289,38 +289,24 @@ a { color: inherit; text-underline-offset: 0.2em; }
   font-weight: 800;
 }
 .filter-categories button { padding-inline: 8px; border-radius: 9px; }
-.filter-categories button[aria-pressed="true"] { background: var(--yellow); }
+.filter-categories button[aria-pressed="true"] { background: var(--right-pale); }
 .filter-chips { margin-top: 10px; }
 .filter-chips button { border-radius: 30px; }
-.filter-chips button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
-.country-search {
-  display: block;
-  width: 100%;
-  min-height: 42px;
-  margin-top: 10px;
-  padding: 6px 12px;
-  border: 1.5px solid var(--ink);
-  border-radius: 10px;
-  background: var(--cream);
-  color: var(--ink);
-  font-size: 16px;
-}
-.country-search::placeholder { color: var(--muted); }
+.filter-chips button[aria-pressed="true"] { background: var(--right); border-color: var(--right); color: var(--cream); }
 .country-options {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  align-content: start;
-  max-height: 148px;
-  overflow-y: auto;
-  padding: 5px;
-  margin: 4px -5px 0;
+  grid-auto-flow: column;
+  grid-template-rows: repeat(2, auto);
+  grid-auto-columns: max-content;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  padding: 6px;
+  margin: 4px -6px 0;
   scrollbar-width: thin;
 }
-.country-options button { min-width: 0; overflow-wrap: anywhere; }
-.filter-note, .filter-empty { color: var(--muted); font-size: 12px; }
-.filter-note { margin-top: 8px; }
+.country-options button { white-space: nowrap; }
+.filter-note { margin-top: 8px; color: var(--muted); font-size: 12px; }
 .filter-note strong { color: var(--ink); }
-.filter-empty { grid-column: 1/-1; }
 
 @media (max-width: 359px) {
   .filter-categories { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
@@ -436,8 +422,9 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .status p { margin-top: 12px; }
 
 @media (hover: hover) {
-  .answer-options button:hover, .filter-back:hover,
-  .filter-chips button:not([aria-pressed="true"]):not([data-filtered="true"]):hover { background: var(--cream); }
+  .answer-options button:hover,
+  .filter-categories button:not([aria-pressed="true"]):hover,
+  .filter-chips button:not([aria-pressed="true"]):hover { background: var(--cream); }
   .continue:not(:disabled):hover { background: #423727; }
 }
 @media (min-width: 800px) {
@@ -466,7 +453,6 @@ a { color: inherit; text-underline-offset: 0.2em; }
   .step-comparison .story-header { padding-top: clamp(16px, 12svh, 108px); }
   .story-visual { align-self: center; gap: clamp(32px, 5.5vw, 80px); }
   .story-header { font-size: clamp(11px, 1vw, 15px); }
-  .country-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .story-heading { font-size: clamp(28px, 3.25vw, 53px); text-wrap: pretty; }
   .step-result .story-heading { font-size: clamp(26px, 3vw, 45px); }
   .fact { border-width: 3px; border-radius: clamp(15px, 2vw, 28px); box-shadow: 6px 8px var(--ink); padding: clamp(12px, 1.9vw, 28px); }

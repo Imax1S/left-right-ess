@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Country, Dot } from '../domain/model.ts';
 import { profileFacets } from '../domain/profiles.ts';
 import { Continue } from './controls.tsx';
@@ -14,8 +14,6 @@ interface Props {
 
 export function ExploreControls({ countries, dots, selection, onSelect, onStart }: Props) {
   const [open, setOpen] = useState<HighlightKey>('country');
-  const [search, setSearch] = useState('');
-  const optionList = useRef<HTMLDivElement>(null);
   const facets = [
     { key: 'country' as const, label: 'Country', options: countries.map(({ code, name }) => ({ value: code, label: name })) },
     ...profileFacets.filter(facet => dots.some(dot => dot.profile?.[facet.key] !== undefined)),
@@ -23,40 +21,21 @@ export function ExploreControls({ countries, dots, selection, onSelect, onStart 
   const active = facets.find(facet => facet.key === open) ?? facets[0];
   const selectedLabel = facets.find(facet => facet.key === selection?.key)
     ?.options.find(option => option.value === selection?.value)?.label;
-  const isCountry = active.key === 'country';
-  const query = search.trim().toLowerCase();
-  const options = isCountry
-    ? active.options.filter(option => option.label.toLowerCase().includes(query))
-    : active.options;
-
-  function updateSearch(value: string) {
-    setSearch(value);
-    if (optionList.current) optionList.current.scrollTop = 0;
-  }
 
   return <>
     <section className="filter-picker" aria-labelledby="highlight-label">
       <div className="filter-heading">
         <h2 id="highlight-label">Highlight people <span>· Optional</span></h2>
-        <button className="filter-clear" type="button" disabled={!selection} onClick={() => {
-          onSelect(null);
-          updateSearch('');
-        }}>Clear filter</button>
+        <button className="filter-clear" type="button" disabled={!selection}
+          onClick={() => onSelect(null)}>Clear filter</button>
       </div>
       <div className="filter-categories" role="group" aria-label="Filter categories">
         {facets.map(facet => <button key={facet.key} type="button" aria-pressed={facet.key === active.key}
-          onClick={() => {
-            if (facet.key === active.key) return;
-            setOpen(facet.key);
-            updateSearch('');
-          }}>{facet.label}</button>)}
+          onClick={() => setOpen(facet.key)}>{facet.label}</button>)}
       </div>
-      {isCountry && <input className="country-search" type="search" aria-label="Find a country"
-        placeholder="Find a country" value={search} onChange={event => updateSearch(event.currentTarget.value)} />}
-      <div key={active.key} ref={optionList} className={isCountry ? 'filter-chips country-options' : 'filter-chips'}
+      <div key={active.key} className={active.key === 'country' ? 'filter-chips country-options' : 'filter-chips'}
         role="group" aria-label={active.label}>
-        {options.length === 0 && <p className="filter-empty" role="status">No countries found.</p>}
-        {options.map(option => {
+        {active.options.map(option => {
           const selected = selection?.key === active.key && selection.value === option.value;
           return <button key={option.value} type="button" aria-pressed={selected}
             onClick={() => onSelect(selected ? null : { key: active.key, value: option.value })}>{option.label}</button>;
