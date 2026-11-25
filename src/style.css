@@ -410,15 +410,8 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .conclusion-shares strong { font: 820 clamp(20px, 5.7vw, 43px)/1 var(--display); letter-spacing: -0.075em; }
 .conclusion-shares span { color: var(--ink); font-size: 12px; font-weight: 850; }
 .conclusion-denominator { display: block; margin-top: 10px; color: var(--muted); font-size: 11px; }
-.method-page, .status { width: min(100% - 32px, 720px); margin: 24px auto; }
-.method-page header, .method-page footer { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; }
-.method-page header a { display: inline-flex; align-items: center; gap: 7px; }
-.method-page h1, .status h1 { margin-block: 30px 20px; font-family: var(--display); font-size: clamp(28px, 6vw, 48px); letter-spacing: -0.065em; }
-.method-page section { margin-bottom: 26px; }
-.method-page h2 { font-weight: 850; }
-.method-page p { margin-top: 8px; line-height: 1.55; }
-.method-page li { margin-bottom: 12px; }
-.method-page footer { justify-content: start; gap: 10px 24px; font-size: 14px; }
+.status { width: min(100% - 32px, 720px); margin: 24px auto; }
+.status h1 { margin-block: 30px 20px; font-family: var(--display); font-size: clamp(28px, 6vw, 48px); letter-spacing: -0.065em; }
 .status p { margin-top: 12px; }
 
 @media (hover: hover) {
