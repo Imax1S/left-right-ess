@@ -1,3 +1,5 @@
+import type { Profile } from './profiles.ts';
+
 export const scores = [0, 1, 2, 3, 4, 6, 7, 8, 9, 10] as const;
 export type Score = (typeof scores)[number];
 export type Side = 'left' | 'right';
@@ -48,6 +50,7 @@ export interface Respondent {
   score: Score;
   weight: number;
   answers: Record<string, Answer>;
+  profile?: Profile;
 }
 
 export interface SurveyData {
@@ -66,6 +69,7 @@ export interface Dot {
   score: Score;
   country: string;
   answers: Record<string, Answer>;
+  profile?: Profile;
 }
 
 export interface Share {

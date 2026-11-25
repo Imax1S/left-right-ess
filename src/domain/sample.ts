@@ -57,5 +57,6 @@ export function sampleRespondents(people: Respondent[], countries: Country[], de
       score: person.score,
       country: person.country,
       answers: person.answers,
+      profile: person.profile,
     }));
 }

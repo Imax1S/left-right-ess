@@ -22,7 +22,10 @@ export function Methodology({ data }: { data: StoryData }) {
       <p>Each of the {integer.format(data.dots.length)} dots is a distinct survey respondent. Every selected country has at least one dot.
         We allocate the remaining places to get as close as possible to each country’s share of the survey weight.
         Within each country, we select respondents deterministically using their survey weights.
-        Each result shows the people in this sample whose answers fall into one of the two groups. A country choice highlights points for the placement step.</p>
+        Each result shows the people in this sample whose answers fall into one of the two groups. On the placement screen, country and profile filters highlight matching points in the sample.</p>
+      <p>Profile filters use the categories recorded by ESS for gender, age bands of 15–29, 30–44, 45–59 and 60+,
+        self-rated religiosity (0–3, 4–6 and 7–10) and education grouped by ES-ISCED levels 1–2, 3–5 and 6–7.
+        Only recorded responses within a selected category match that filter.</p>
       <p>Your marker moves to the other side when your answer was more common there at the displayed precision.
         Each question starts from the position you chose.</p>
       <p>For each question, percentages compare respondents whose answers fall into one of the two groups. We exclude neutral, missing and other responses.

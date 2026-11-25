@@ -1,6 +1,6 @@
 """Create the local app's compact ESS extract from an unmodified official CSV.
 
-Usage: python3 scripts/import-ess.py /absolute/path/ESS11e04_2.csv
+Usage: python3 scripts/import-ess11.py /absolute/path/ESS11e04_2.csv
 No account identifiers or credentials are stored in generated files.
 """
 import csv
@@ -18,7 +18,7 @@ COUNTRIES = {
  'NO':'Норвегия','PL':'Польша','PT':'Португалия','RS':'Сербия','SE':'Швеция',
  'SI':'Словения','SK':'Словакия','UA':'Украина','DK':'Дания','RO':'Румыния',
 }
-FIELDS=['idno','agea','lrscale','gincdif','impcntr','freehms','wrclmch','pspwght','ccnthum','gndr','hmsacld','euftf','imdfetn','trstprl','psppipla','vote','imbgeco','imueclt','lrnobed','loylead','eqparep','fineqpy','stfdem','ppltrst','ipudrsta']
+FIELDS=['idno','agea','lrscale','gincdif','impcntr','freehms','wrclmch','pspwght','ccnthum','gndr','hmsacld','euftf','imdfetn','trstprl','psppipla','vote','imbgeco','imueclt','lrnobed','loylead','eqparep','fineqpy','stfdem','ppltrst','ipudrsta','rlgdgr','eisced']
 
 def number(value):
     if value is None or value.strip() in ('','NA','NaN'): return None

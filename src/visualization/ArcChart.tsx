@@ -11,7 +11,7 @@ import {
 interface Props {
   dots: Dot[];
   score: Score | null;
-  country: string | null;
+  highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
   onPlace?: (score: Score) => void;
@@ -19,7 +19,7 @@ interface Props {
 
 type MotionStyle = CSSProperties & { '--delay': string };
 
-export function ArcChart({ dots, score, country, comparison, result, onPlace }: Props) {
+export function ArcChart({ dots, score, highlightedIds, comparison, result, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -125,8 +125,9 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
             const answerPoint = answerPositions?.get(person.id);
             const point = answerPoint ?? arcPositions.get(person.id)!;
             const side = sideOf(person.score);
-            const opacity = groups ? (answerPoint ? 1 : 0) : country
-              ? person.country === country ? 1 : 0.27
+            const highlighted = highlightedIds?.has(person.id);
+            const opacity = groups ? (answerPoint ? 1 : 0) : highlightedIds
+              ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : person.score === score ? 1 : 0.5;
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
@@ -135,7 +136,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
             };
             const diameter = Math.SQRT2 * point.r;
             return <g key={person.id} className={`respondent ${side}`} style={style}
-              data-highlighted={country && person.country === country ? 'true' : undefined}>
+              data-highlighted={highlighted ? 'true' : undefined}>
               {side === 'left'
                 ? <circle r={point.r} />
                 : <rect x={-diameter / 2} y={-diameter / 2} width={diameter} height={diameter} rx="1.6" transform="rotate(45)" />}

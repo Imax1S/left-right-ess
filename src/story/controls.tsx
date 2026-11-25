@@ -1,5 +1,5 @@
 import { scores, sideOf } from '../domain/model.ts';
-import type { Choice, Country, Dot, Score, StoryQuestion } from '../domain/model.ts';
+import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from './answerAlignment.ts';
 
 export const integer = new Intl.NumberFormat('en-GB');
@@ -23,68 +23,40 @@ export function Continue({ children, onClick, disabled = false }: {
   return <button className="continue" disabled={disabled} onClick={onClick}>{children}<Arrow /></button>;
 }
 
-export function ScaleControls({ score, shown, onPlace, onConfirm }: {
-  score: Score | null; shown: number; onPlace: (score: Score) => void; onConfirm: () => void;
-}) {
-  return <>
-    <div className="survey-intro">
-      <h2>European Social Survey</h2>
-      <ol>
-        <li>People placed themselves from left to right.</li>
-        <li>Then they answered questions on social topics.</li>
-        <li>Now you can do the same and compare.</li>
-      </ol>
-    </div>
-    <div className="scale-controls">
-      <div className="scale-readout">
-        {score === null
-          ? <div><b>Choose your position</b><p>You can also drag your marker or use the scale.</p></div>
-          : <>
-            <strong className={sideOf(score)}>{score}</strong>
-            <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>
-          </>}
-      </div>
-      <input className="scale-slider" data-side={score === null ? 'unplaced' : sideOf(score)}
-        aria-label="Your place on the left–right scale"
-        aria-valuetext={score === null ? 'Position not chosen' : `${score}, ${placement(score)}`}
-        type="range" min="0" max={scores.length - 1} step="1"
-        value={score === null ? scores.indexOf(4) : scores.indexOf(score)}
-        onChange={event => onPlace(scores[event.currentTarget.valueAsNumber])}
-        onClick={event => { if (score === null) onPlace(scores[event.currentTarget.valueAsNumber]); }} />
-      <div className="scale-ticks" aria-label="Choose a position">
-        {scores.map(value => <button key={value} onClick={() => onPlace(value)}
-          aria-label={`Position ${value}`} aria-pressed={score === value}>{value}</button>)}
-      </div>
-      <div className="scale-sides" aria-hidden="true"><span>← Left</span><span>Right →</span></div>
-    </div>
-    <Continue onClick={onConfirm} disabled={score === null}>This is me</Continue>
-  </>;
+export function SurveyIntro() {
+  return <div className="survey-intro">
+    <h2>European Social Survey</h2>
+    <ol>
+      <li>People placed themselves from left to right.</li>
+      <li>Then they answered questions on social topics.</li>
+      <li>Now you can do the same and compare.</li>
+    </ol>
+  </div>;
 }
 
-export function CountryControls({ countries, selected, dots, onCountry, onStart }: {
-  countries: Country[]; selected: string | null; dots: Dot[];
-  onCountry: (code: string) => void; onStart: () => void;
+export function ScaleControls({ score, shown, onPlace }: {
+  score: Score | null; shown: number; onPlace: (score: Score) => void;
 }) {
-  const country = countries.find(item => item.code === selected);
-  const available = dots.filter(dot => dot.country === selected);
-  const left = available.filter(dot => sideOf(dot.score) === 'left').length;
-
-  return <>
-    <section className="country-picker" aria-labelledby="country-label">
-      <h2 id="country-label">Your country <span>· Optional</span></h2>
-      <div className="country-options" role="group" aria-labelledby="country-label">
-        {countries.map(item => <button key={item.code} aria-pressed={item.code === selected}
-          onClick={() => onCountry(item.code)}>{item.name}</button>)}
-      </div>
-      <p className="country-note" aria-live="polite">
-        {country ? available.length
-          ? `${country.name}: ${available.length} shown · ${left} left, ${available.length - left} right.`
-          : `No one from ${country.name} in the ${dots.length} people shown.`
-          : 'Choose a country to see its participants on the arc.'}
-      </p>
-    </section>
-    <Continue onClick={onStart}>To the first question</Continue>
-  </>;
+  return <div className="scale-controls">
+    <input className="scale-slider" data-side={score === null ? 'unplaced' : sideOf(score)}
+      aria-label="Your place on the left–right scale"
+      aria-valuetext={score === null ? 'Position not chosen' : `${score}, ${placement(score)}`}
+      type="range" min="0" max={scores.length - 1} step="1"
+      value={score === null ? scores.indexOf(4) : scores.indexOf(score)}
+      onChange={event => onPlace(scores[event.currentTarget.valueAsNumber])}
+      onClick={event => { if (score === null) onPlace(scores[event.currentTarget.valueAsNumber]); }} />
+    <div className="scale-ticks" aria-label="Choose a position">
+      {scores.map(value => <button key={value} onClick={() => onPlace(value)}
+        aria-label={`Position ${value}`} aria-pressed={score === value}>{value}</button>)}
+    </div>
+    <div className="scale-sides" aria-hidden="true"><span>← Left</span><span>Right →</span></div>
+    <div className="scale-readout">
+      {score === null ? <p>You can drag the marker or use the slider.</p> : <>
+        <strong className={sideOf(score)}>{score}</strong>
+        <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>
+      </>}
+    </div>
+  </div>;
 }
 
 export function QuestionControls({ question, onAnswer }: {
@@ -130,6 +102,6 @@ export function ResultControls({ question, choice, score, alignment, final, onCo
     {gap !== null && <p className="result-note">
       {note}{gap > 0 && ` The groups were ${sharePercent.format(gap)} percentage points apart.`}
     </p>}
-    <Continue onClick={onContinue}>{final ? 'Start over' : 'Next question'}</Continue>
+    <Continue onClick={onContinue}>{final ? 'See the takeaway' : 'Next question'}</Continue>
   </>;
 }

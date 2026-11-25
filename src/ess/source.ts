@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises';
 import { isScore } from '../domain/model.ts';
 import type { Answer, Respondent, SurveyAdapter } from '../domain/model.ts';
 import { ess11Questions } from './questions.ts';
+import { essProfile } from './profile.ts';
 
 type EssQuestion = (typeof ess11Questions)[number];
 interface Extract {
@@ -39,6 +40,9 @@ export async function ess11Source(
     scale: field('lrscale'),
     weight: field('pspwght'),
     climateCause: field('ccnthum'),
+    gender: field('gndr'),
+    religiosity: extract.source.fields.indexOf('rlgdgr'),
+    education: extract.source.fields.indexOf('eisced'),
   };
   const codes = Object.keys(extract.countries);
   const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
@@ -71,6 +75,7 @@ export async function ess11Source(
             country: code,
             score,
             weight: weight * country.populationWeight,
+            profile: essProfile(age, row[indexes.gender], row[indexes.religiosity] ?? null, row[indexes.education] ?? null),
             answers: Object.fromEntries(questions.map(question => [
               question.id, classify(question.type, row[question.column], row[indexes.climateCause]),
             ])),
