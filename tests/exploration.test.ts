@@ -6,18 +6,15 @@ import { sharedAnswer } from '../src/story/takeaway.ts';
 import { ess11Source } from '../src/ess/source.ts';
 import { prepareStory } from '../src/domain/prepareStory.ts';
 
-const matches = (dot: Dot, filters: Parameters<typeof matchesHighlights>[2]) =>
-  matchesHighlights(dot, 'EE', filters);
-
-test('country and profile filters intersect and missing profile values stay unknown', () => {
+test('a highlight matches only the selected country or recorded profile value', () => {
   const dot = {
     id: '42', country: 'EE', score: 3, answers: { q: 'b' }, profile: { gender: 'women', age: '30-44' },
   } satisfies Dot;
-  assert.ok(matches(dot, { gender: 'women', age: '30-44' }));
-  assert.ok(matches(dot, {}));
-  assert.ok(!matches(dot, { gender: 'women', age: '15-29' }));
-  assert.ok(!matches(dot, { religiosity: 'high' }));
-  assert.ok(!matches({ ...dot, country: 'FI' }, {}));
+  assert.ok(matchesHighlights(dot, { key: 'country', value: 'EE' }));
+  assert.ok(matchesHighlights(dot, { key: 'gender', value: 'women' }));
+  assert.ok(!matchesHighlights(dot, { key: 'age', value: '15-29' }));
+  assert.ok(!matchesHighlights(dot, { key: 'religiosity', value: 'high' }));
+  assert.ok(!matchesHighlights({ ...dot, country: 'FI' }, { key: 'country', value: 'EE' }));
 });
 
 test('published dots carry the categorical ESS profile and the takeaway uses genuine shared answers', async () => {

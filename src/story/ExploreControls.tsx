@@ -1,62 +1,79 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { sideOf } from '../domain/model.ts';
 import type { Country, Dot } from '../domain/model.ts';
 import { profileFacets } from '../domain/profiles.ts';
-import type { Profile, ProfileKey } from '../domain/profiles.ts';
-import { Continue } from './controls.tsx';
+import { Arrow, Continue } from './controls.tsx';
+import type { HighlightFilter, HighlightKey } from './highlights.ts';
 
 interface Props {
   countries: Country[];
-  country: string | null;
   dots: Dot[];
-  filters: Profile;
+  selection: HighlightFilter | null;
   matches: Dot[] | null;
-  onCountry: (code: string) => void;
-  onFilter: (key: ProfileKey, value: string | null) => void;
+  onSelect: (selection: HighlightFilter | null) => void;
   onStart: () => void;
 }
 
-export function ExploreControls({ countries, country, dots, filters, matches, onCountry, onFilter, onStart }: Props) {
-  const [open, setOpen] = useState<ProfileKey | null>(null);
-  const available = profileFacets.filter(facet => dots.some(dot => dot.profile?.[facet.key] !== undefined));
-  const active = available.find(facet => facet.key === open);
-  const countryName = countries.find(item => item.code === country)?.name;
-  const filteredByProfile = Object.keys(filters).length > 0;
+export function ExploreControls({ countries, dots, selection, matches, onSelect, onStart }: Props) {
+  const [open, setOpen] = useState<HighlightKey | null>(null);
+  const backButton = useRef<HTMLButtonElement>(null);
+  const categoryButtons = useRef<Partial<Record<HighlightKey, HTMLButtonElement>>>({});
+  const previousOpen = useRef<HighlightKey | null>(null);
+  const facets = [
+    { key: 'country' as const, label: 'Country', options: countries.map(({ code, name }) => ({ value: code, label: name })) },
+    ...profileFacets.filter(facet => dots.some(dot => dot.profile?.[facet.key] !== undefined)),
+  ];
+  const active = facets.find(facet => facet.key === open);
+  const selectedLabel = facets.find(facet => facet.key === selection?.key)
+    ?.options.find(option => option.value === selection?.value)?.label;
+
+  useEffect(() => {
+    if (open) {
+      backButton.current?.focus({ preventScroll: true });
+    } else if (previousOpen.current) {
+      categoryButtons.current[previousOpen.current]?.focus({ preventScroll: true });
+    }
+    previousOpen.current = open;
+  }, [open]);
+
   let note = 'Choose a filter to highlight people on the arc.';
   if (matches) {
     const left = matches.filter(dot => sideOf(dot.score) === 'left').length;
-    const label = countryName && !filteredByProfile ? `${countryName}: ` : '';
     note = matches.length
-      ? `${label}${matches.length} shown · ${left} left, ${matches.length - left} right.`
+      ? `${selectedLabel ? `${selectedLabel}: ` : ''}${matches.length} shown · ${left} left, ${matches.length - left} right.`
       : `No matches among the ${dots.length} people shown.`;
   }
 
   return <>
     <section className="country-picker" aria-labelledby="highlight-label">
       <h2 id="highlight-label">Highlight people <span>· Optional</span></h2>
-      {available.length > 0 && <div className="profile-shortcuts" role="group" aria-label="Profile filters">
-        {available.map(facet => {
-          const selected = facet.options.find(option => option.value === filters[facet.key]);
-          return <button key={facet.key} aria-expanded={open === facet.key}
-            aria-controls={open === facet.key ? 'profile-options' : undefined}
-            data-filtered={selected ? 'true' : undefined}
-            onClick={() => setOpen(open === facet.key ? null : facet.key)}>
-            {facet.label}{selected && <small>{selected.label}</small>}
+      {active ? <>
+        <div className="filter-navigation">
+          <button className="filter-back" type="button" ref={backButton} onClick={() => setOpen(null)}>
+            <Arrow back /> All filters
+          </button>
+          <span>{active.label}</span>
+        </div>
+        <div className={`filter-chips${active.key === 'country' ? ' country-options' : ''}`}
+          role="group" aria-label={active.label}>
+          <button type="button" aria-pressed={selection === null} onClick={() => onSelect(null)}>All people</button>
+          {active.options.map(option => {
+            const selected = selection?.key === active.key && selection.value === option.value;
+            return <button key={option.value} type="button" aria-pressed={selected}
+              onClick={() => onSelect({ key: active.key, value: option.value })}>{option.label}</button>;
+          })}
+        </div>
+      </> : <div className="filter-chips filter-categories" role="group" aria-label="Filter categories">
+        {facets.map(facet => {
+          const selected = selection?.key === facet.key;
+          return <button key={facet.key} type="button" data-filtered={selected ? 'true' : undefined}
+            ref={button => { if (button) categoryButtons.current[facet.key] = button; }}
+            onClick={() => setOpen(facet.key)}>
+            {facet.label}{selected && selectedLabel ? <> <small>{selectedLabel}</small></> : null}
           </button>;
         })}
+        {selection && <button type="button" onClick={() => onSelect(null)}>Clear filter</button>}
       </div>}
-      {active && <div id="profile-options" className="profile-options" role="group" aria-label={active.label}>
-        <button aria-pressed={!filters[active.key]} onClick={() => onFilter(active.key, null)}>Any</button>
-        {active.options.map(option => <button key={option.value} aria-pressed={filters[active.key] === option.value}
-          onClick={() => onFilter(active.key, filters[active.key] === option.value ? null : option.value)}>
-          {option.label}
-        </button>)}
-      </div>}
-      <h2 id="country-label" className="country-label">Country</h2>
-      <div className="country-options" role="group" aria-labelledby="country-label">
-        {countries.map(item => <button key={item.code} aria-pressed={item.code === country}
-          onClick={() => onCountry(item.code)}>{item.name}</button>)}
-      </div>
       <p className="country-note" aria-live="polite">{note}</p>
     </section>
     <Continue onClick={onStart}>To the first question</Continue>

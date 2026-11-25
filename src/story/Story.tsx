@@ -33,8 +33,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     alignment: answerAlignment(question.stats, state.option, state.score),
   } : null;
   const shown = data.dots.filter(dot => dot.score === score).length;
-  const matches = state.step === 'among' && (state.country !== null || Object.keys(state.filters).length > 0)
-    ? data.dots.filter(dot => matchesHighlights(dot, state.country, state.filters))
+  const highlight = state.step === 'among' ? state.highlight : null;
+  const matches = highlight
+    ? data.dots.filter(dot => matchesHighlights(dot, highlight))
     : null;
 
   useEffect(() => {
@@ -74,11 +75,11 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     heading = <>You are at {state.score}, {placement(state.score).toLowerCase()}</>;
     cards = <>
       <Fact value={shown} caption="Shown at your mark" />
-      <Fact value={matches?.length ?? data.dots.length} caption={matches ? 'Match your filters' : 'People shown on the arc'} />
+      <Fact value={matches?.length ?? data.dots.length} caption={matches ? 'Match your filter' : 'People shown on the arc'} />
     </>;
-    controls = <ExploreControls countries={data.countries} country={state.country} dots={data.dots}
-      filters={state.filters} matches={matches} onCountry={code => dispatch({ type: 'country', code })}
-      onFilter={(key, value) => dispatch({ type: 'filter', key, value })} onStart={() => navigate({ type: 'start' })} />;
+    controls = <ExploreControls countries={data.countries} dots={data.dots} selection={state.highlight}
+      matches={matches} onSelect={selection => dispatch({ type: 'filter', selection })}
+      onStart={() => navigate({ type: 'start' })} />;
   } else if (state.step === 'question' && question) {
     heading = question.prompt;
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
