@@ -80,6 +80,7 @@ export interface Share {
 
 export interface StoryQuestion extends Question {
   stats: Record<Side, Record<Choice, Share>>;
+  correlation: number | null;
 }
 
 export interface StoryData {

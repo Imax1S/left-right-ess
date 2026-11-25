@@ -6,7 +6,7 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { matchesHighlights } from './highlights.ts';
-import { sharedAnswer } from './takeaway.ts';
+import { sharedAnswer, summarizeGaps } from './takeaway.ts';
 import { createSessionReducer, initialSession } from './session.ts';
 
 export function Wordmark() {
@@ -131,6 +131,18 @@ function Conclusion({ data, headingRef, hidden, onBack, onRestart }: {
   onBack: () => void; onRestart: () => void;
 }) {
   const example = sharedAnswer(data.questions);
+  const gaps = summarizeGaps(data.questions);
+  let summary = 'People who place themselves on the same side can give different answers.';
+  if (gaps) {
+    const min = Math.round(gaps.min);
+    const max = Math.round(gaps.max);
+    const gap = min === max ? min : `${min}–${max}`;
+    const questions = gaps.comparableCount === 1 ? 'question' : 'questions';
+    const majority = gaps.sharedMajorityCount === 0
+      ? 'The two sides had no majority answer in common.'
+      : `Both sides had the same majority answer on ${gaps.sharedMajorityCount} of ${gaps.comparableCount}.`;
+    summary = `The left–right gap was ${gap} percentage points across ${gaps.comparableCount} ${questions}. ${majority}`;
+  }
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -141,7 +153,7 @@ function Conclusion({ data, headingRef, hidden, onBack, onRestart }: {
         <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">
           A label tells <mark>part</mark> of the story.
         </h1>
-        <p>People who place themselves on the same side can give different answers. On some questions, people on both sides agree.</p>
+        <p>{summary}</p>
       </div>
       {example && <article className="conclusion-example">
         <h2>{example.question.prompt}</h2>

@@ -34,10 +34,16 @@ export function Methodology({ data }: { data: StoryData }) {
         We combine the ESS post-stratification and population weights (<code>pspwght × pweight</code>) for the pooled comparison.</p>
     </section>
     <section>
-      <h2>Question groupings</h2>
+      <h2>Question groupings and correlations</h2>
+      <p>The final screen compares the weighted shares choosing the same answer on each side. The gap is the absolute
+        difference in those shares, in percentage points. A shared majority means more than half of each side chose the same answer.</p>
+      <p>For each question we also calculate a weighted Pearson correlation for the two political sides and two answer groups (phi).
+        Positive values mean the first answer was more common on the right, and negative values mean it was more common on the left.
+        These are pooled descriptive estimates for the questions and countries in this story.</p>
       <ul>{data.questions.map(question => <li key={question.id}>
         <strong>{question.topic}</strong>
         <p>{question.prompt} {question.grouping}</p>
+        {typeof question.correlation === 'number' && <p>Weighted correlation {question.correlation.toFixed(2)}</p>}
       </li>)}</ul>
     </section>
     <footer>

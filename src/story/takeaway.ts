@@ -24,3 +24,20 @@ export function sharedAnswer(questions: readonly StoryQuestion[]): SharedAnswer 
   }
   return example;
 }
+
+export function summarizeGaps(questions: readonly StoryQuestion[]) {
+  const gaps: number[] = [];
+  let sharedMajorityCount = 0;
+  for (const { stats } of questions) {
+    const left = stats.left.a.percent;
+    const right = stats.right.a.percent;
+    if (left === null || right === null) continue;
+
+    gaps.push(Math.abs(left - right));
+    if ((left > 50 && right > 50) || (left < 50 && right < 50)) sharedMajorityCount++;
+  }
+
+  return gaps.length
+    ? { min: Math.min(...gaps), max: Math.max(...gaps), comparableCount: gaps.length, sharedMajorityCount }
+    : null;
+}
