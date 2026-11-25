@@ -1,40 +1,49 @@
 import { choices, sideOf, sides } from './model.ts';
-import type { Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
+import type { Choice, Question, Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
 import { sampleRespondents } from './sample.ts';
 
-function summarize(people: Respondent[], id: string): Pick<StoryQuestion, 'stats' | 'correlation'> {
-  const empty = () => ({ a: { count: 0, weight: 0 }, b: { count: 0, weight: 0 } });
-  const tally = { left: empty(), right: empty() };
+function weightedAssociation(rows: readonly (readonly number[])[]) {
+  const columnWeights = choices.map((_, i) => rows.reduce((sum, row) => sum + row[i], 0));
+  const totalWeight = columnWeights.reduce((sum, weight) => sum + weight, 0);
+  const rowWeights = rows.map(row => row.reduce((sum, weight) => sum + weight, 0));
+  const dimensions = Math.min(rowWeights.filter(weight => weight > 0).length,
+    columnWeights.filter(weight => weight > 0).length) - 1;
+  if (dimensions <= 0) return null;
+
+  // Cramér's V for the weighted contingency table, without a significance test.
+  let chiSquared = 0;
+  rows.forEach((row, i) => row.forEach((observed, j) => {
+    const expected = rowWeights[i] * columnWeights[j] / totalWeight;
+    if (expected > 0) chiSquared += (observed - expected) ** 2 / expected;
+  }));
+  return Math.sqrt(chiSquared / (totalWeight * dimensions));
+}
+
+function summarize(people: Respondent[], question: Question): Pick<StoryQuestion, 'stats' | 'association'> {
+  const empty = () => ({ count: 0, weight: 0 });
+  const groups = () => ({ a: empty(), neutral: empty(), b: empty() });
+  const tally = { left: groups(), centre: groups(), right: groups() };
   for (const person of people) {
-    const answer = person.answers[id];
-    if (answer !== 'a' && answer !== 'b') continue;
-    const group = tally[sideOf(person.score)][answer];
-    group.count++;
-    group.weight += person.weight;
+    const answer = person.answers[question.id];
+    if (answer !== 'a' && answer !== 'b' && (answer !== 'neutral' || question.options.neutral === undefined)) continue;
+    const bucket = tally[sideOf(person.score)][answer];
+    bucket.count++;
+    bucket.weight += person.weight;
   }
 
-  const stats = {} as StoryQuestion['stats'];
-  for (const side of sides) {
-    const total = choices.reduce((sum, answer) => sum + tally[side][answer].count, 0);
-    const weight = choices.reduce((sum, answer) => sum + tally[side][answer].weight, 0);
-    stats[side] = {} as StoryQuestion['stats'][typeof side];
-    for (const answer of choices) {
-      const entry = tally[side][answer];
-      stats[side][answer] = {
-        count: entry.count,
-        total,
-        percent: weight > 0 ? 100 * entry.weight / weight : null,
-      };
-    }
+  function shareFor(side: keyof typeof tally) {
+    const row = tally[side];
+    const total = choices.reduce((sum, answer) => sum + row[answer].count, 0);
+    const weight = choices.reduce((sum, answer) => sum + row[answer].weight, 0);
+    const share = (answer: Choice) => ({
+      count: row[answer].count, total, percent: weight > 0 ? 100 * row[answer].weight / weight : null,
+    });
+    return { a: share('a'), neutral: share('neutral'), b: share('b') };
   }
-  // Pearson's phi for right = 1 and first answer = 1, using weighted cell totals.
-  const leftA = tally.left.a.weight;
-  const leftB = tally.left.b.weight;
-  const rightA = tally.right.a.weight;
-  const rightB = tally.right.b.weight;
-  const denominator = Math.sqrt((leftA + leftB) * (rightA + rightB) * (leftA + rightA) * (leftB + rightB));
-  const correlation = denominator > 0 ? (rightA * leftB - leftA * rightB) / denominator : null;
-  return { stats, correlation };
+
+  const stats = { left: shareFor('left'), centre: shareFor('centre'), right: shareFor('right') };
+  const association = weightedAssociation(sides.map(side => choices.map(choice => tally[side][choice].weight)));
+  return { stats, association };
 }
 
 export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig): Promise<StoryData> {
@@ -44,7 +53,7 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
   for (const key of ['questions', 'countries'] as const) {
     const items = config[key];
     if (!items.length || new Set(items).size !== items.length) {
-      throw new Error(`Configure at least one ${key === 'questions' ? 'question' : 'country'}, with no duplicates`);
+      throw new Error('Configure at least one ' + key + ' value, with no duplicates');
     }
   }
   const { source, countries, questions, people } = await adapter.load(config);
@@ -52,7 +61,7 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
   return {
     source,
     countries,
-    questions: questions.map(question => ({ ...question, ...summarize(people, question.id) })),
+    questions: questions.map(question => ({ ...question, ...summarize(people, question) })),
     eligibleCount: people.length,
     dots: sampleRespondents(people, countries, config.dotCount),
   };

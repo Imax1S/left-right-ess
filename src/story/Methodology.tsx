@@ -1,39 +1,35 @@
-import { sideOf, sides } from '../domain/model.ts';
+import { scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Dot, StoryData, StoryQuestion } from '../domain/model.ts';
-import { arcBand, arcLayout, viewBox } from '../visualization/geometry.ts';
-import { Arrow, integer, sharePercent } from './controls.tsx';
+import { arcLayout, placementBand, viewBox } from '../visualization/geometry.ts';
+import { RespondentShape } from '../visualization/ArcChart.tsx';
+import { Arrow, formatShare, integer, sharePercent } from './controls.tsx';
 import { Wordmark } from './Story.tsx';
 import './methodology.css';
 
 function SampleArc({ dots }: { dots: Dot[] }) {
   const { dots: positions } = arcLayout(dots);
-  const leftCount = dots.filter(dot => sideOf(dot.score) === 'left').length;
   return <figure className="method-arc">
     <svg viewBox={'0 0 ' + viewBox.width + ' 192'} aria-hidden="true">
-      <path d={arcBand(0, Math.PI / 2)} fill="var(--left-pale)" />
-      <path d={arcBand(Math.PI / 2, Math.PI)} fill="var(--right-pale)" />
+      {sides.map(side => <path key={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
       {positions.map(({ person, x, y, r }) => {
-        if (sideOf(person.score) === 'left') {
-          return <circle key={person.id} className="method-arc-dot left" cx={x} cy={y} r={r} />;
-        }
-        const offset = r / Math.SQRT2;
-        return <rect key={person.id} className="method-arc-dot right"
-          x={x - offset} y={y - offset} width={2 * offset} height={2 * offset} rx="1.6"
-          transform={'rotate(45 ' + x + ' ' + y + ')'} />;
+        const side = sideOf(person.score);
+        return <g key={person.id} className={'method-arc-dot ' + side}
+          transform={'translate(' + x + ' ' + y + ')'}>
+          <RespondentShape side={side} radius={r} />
+        </g>;
       })}
     </svg>
     <figcaption>
-      <span className="left"><strong>{integer.format(leftCount)}</strong> left</span>
-      <span>Dots in the story</span>
-      <span className="right"><strong>{integer.format(dots.length - leftCount)}</strong> right</span>
+      {sides.map(side => <span className={side} key={side}>
+        <strong>{integer.format(dots.filter(dot => sideOf(dot.score) === side).length)}</strong> {sideLabels[side]}
+      </span>)}
     </figcaption>
   </figure>;
 }
 
 function QuestionMethod({ question }: { question: StoryQuestion }) {
-  const left = question.stats.left.a.percent;
-  const right = question.stats.right.a.percent;
-  const gap = left === null || right === null ? null : Math.abs(left - right);
+  const shares = sides.map(side => question.stats[side].a.percent).filter(share => share !== null);
+  const gap = shares.length === sides.length ? Math.max(...shares) - Math.min(...shares) : null;
 
   return <details className="method-question">
     <summary>
@@ -41,12 +37,12 @@ function QuestionMethod({ question }: { question: StoryQuestion }) {
         <span className="method-question-topic">{question.topic}</span>
         {gap !== null && <span className="method-gap">{sharePercent.format(gap)} pp gap</span>}
       </span>
-      <span className="method-answer">Chose “{question.options[0]}”</span>
+      <span className="method-answer">Chose “{question.options.a}”</span>
       <span className="method-shares">
         {sides.map(side => {
           const percent = question.stats[side].a.percent;
           return <span className={'method-share ' + side} key={side}>
-            <span><strong>{percent === null ? '—' : sharePercent.format(percent) + '%'}</strong> {side}</span>
+            <span><strong>{formatShare(percent)}</strong> {sideLabels[side]}</span>
             <span className="method-share-track" aria-hidden="true">
               <span style={{ width: (percent ?? 0) + '%' }} />
             </span>
@@ -57,13 +53,13 @@ function QuestionMethod({ question }: { question: StoryQuestion }) {
     <div className="method-question-detail">
       <p><strong>{question.prompt}</strong></p>
       <p>{question.grouping}</p>
-      {typeof question.correlation === 'number' && <p>Weighted correlation {question.correlation.toFixed(2)}</p>}
+      {typeof question.association === 'number' && <p>Weighted Cramér’s V {question.association.toFixed(2)}</p>}
     </div>
   </details>;
 }
 
 export function Methodology({ data }: { data: StoryData }) {
-  const agreement = data.questions.find(({ options }) => options[0] === 'Agree' && options[1] === 'Disagree');
+  const agreement = data.questions.find(({ options }) => options.a === 'Agree' && options.b === 'Disagree' && options.neutral);
 
   return <main className="story-page method-page">
     <header className="story-header">
@@ -89,10 +85,9 @@ export function Methodology({ data }: { data: StoryData }) {
     <section className="method-split" aria-label="From respondents to dots">
       <article className="method-card">
         <h2>Who makes it onto the arc?</h2>
-        <p>The ESS asks people to place themselves on a scale from 0 (left) to 10 (right). We use positions 0–4 and 6–10. The midpoint, 5, sits outside the comparison.</p>
-        <ol className="method-scale" aria-label="Left–right scale with the midpoint excluded">
-          {Array.from({ length: 11 }, (_, score) =>
-            <li key={score} className={score === 5 ? 'is-excluded' : score < 5 ? 'left' : 'right'}>{score}</li>)}
+        <p>The ESS asks people to place themselves on a scale from 0 (left) to 10 (right). We group 0–4 on the left, 5 in the centre and 6–10 on the right.</p>
+        <ol className="method-scale" aria-label="Left–right scale with an included midpoint">
+          {scores.map(score => <li key={score} className={sideOf(score)}>{score}</li>)}
         </ol>
         <p>Respondents also need a recorded age from 15 to 110 and a positive survey weight.</p>
         <details className="method-disclosure">
@@ -121,35 +116,35 @@ export function Methodology({ data }: { data: StoryData }) {
     <section aria-labelledby="method-answers">
       <div className="method-split method-transform">
         <div>
-          <h2 id="method-answers">From survey answers to two buttons</h2>
-          <p>We combine related answers into the two choices shown. We exclude neutral, missing and other responses outside those groups for each question.</p>
-          <p>The dots regroup by answer. Your marker crosses the arc if your answer is more common on the other political side at the displayed precision. Each question starts at your original position.</p>
+          <h2 id="method-answers">From survey answers to answer groups</h2>
+          <p>We combine related answers and keep middle responses wherever the survey provides one. We mark missing responses and answers outside the groups separately from the displayed choices.</p>
+          <p>The dots regroup by answer. The reader marker lands in the chosen answer band, toward the political group where that answer is most common. Each question starts at the reader’s original mark.</p>
         </div>
         {agreement && <figure className="method-card method-recode">
           <figcaption>{agreement.prompt}</figcaption>
           <dl>
             <div><dt>Strongly agree + agree</dt><dd>Agree</dd></div>
-            <div><dt>Neither agree nor disagree</dt><dd>Excluded</dd></div>
+            <div><dt>Neither agree nor disagree</dt><dd>Neither</dd></div>
             <div><dt>Disagree + strongly disagree</dt><dd>Disagree</dd></div>
           </dl>
         </figure>}
       </div>
       <div className="method-weight">
         <h3>Where the percentages come from</h3>
-        <p>For each political side, we divide the weight of the selected answer by the total weight of both answer groups. This uses all eligible respondents with either answer. The count beside each percentage is unweighted.</p>
+        <p>For each political group, we divide the weight of the selected answer by the total weight of all displayed answers, including the middle response when available. The response counts are unweighted.</p>
         <p>We combine the ESS post-stratification and population weights (<code>pspwght × pweight</code>) for the pooled comparison.</p>
       </div>
     </section>
 
     <section aria-labelledby="method-questions">
-      <h2 id="method-questions">Question groupings and correlations</h2>
-      <p>The gap is the difference between the two weighted shares, in percentage points. In the finale, a shared majority means more than half of each side chose the same answer.</p>
+      <h2 id="method-questions">Question groupings and associations</h2>
+      <p>The gap is the difference between the highest and lowest weighted shares, in percentage points. A shared majority means more than half of each political group chose the same answer.</p>
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}
       </div>
       <details className="method-disclosure method-correlation">
-        <summary>How to read the correlation</summary>
-        <p>We calculate a weighted Pearson correlation between political side and answer group (phi). Positive values mean the first answer was more common on the right, and negative values mean it was more common on the left. These are pooled descriptive estimates for the questions and countries in this story.</p>
+        <summary>How to read the association</summary>
+        <p>Weighted Cramér’s V measures how strongly the distribution of answers varies across the three political groups. It runs from 0 (the same distribution) to 1 (the strongest possible association). These are pooled descriptive estimates for the countries in this story.</p>
       </details>
     </section>
 

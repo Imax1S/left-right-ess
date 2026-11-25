@@ -1,26 +1,28 @@
 # Left. Right.
 
-An interactive story about how much a political label tells you. Place yourself on the arc, answer six questions from the European Social Survey, and compare your answers with those of people on either side.
+An interactive story about how much a political label tells you. Place yourself on the arc, answer six questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
 
 **[Play the story](https://imax1s.github.io/left-right-ess/)** · [Explore the data and methodology](https://imax1s.github.io/left-right-ess/#/about)
 
-![Answer reveal for the income gap question. The reader's orange marker moves into the Agree group. In the survey comparison, 91.6% on the left and 77.7% on the right chose Agree.](docs/readme/arc-preview.webp)
+![Answer reveal for the income gap question. The reader's orange marker moves into the Agree group. In the survey comparison, 79.1% on the left, 71% at the midpoint and 61.9% on the right chose Agree.](docs/readme/arc-preview.webp)
 
 ## The visual identity
 
-![Left. Right. wordmark, Unbounded and Manrope typography, and the ink, paper, red, blue, orange and yellow swatches.](docs/readme/arc-identity.webp)
+![Left. Right. wordmark, Unbounded and Manrope typography, and the ink, paper, red, green, blue, orange and yellow swatches.](docs/readme/arc-identity.webp)
 
-The arc borrows its shape from a parliamentary seating chart. Red circles and blue diamonds carry each respondent’s original political side as the dots move into answer groups. Orange follows the reader and the people who chose the same starting mark. **Unbounded** sets the headlines and large numbers. **Manrope** sets the labels and body copy.
+The arc borrows its shape from a parliamentary seating chart. Red circles, muted green squares and blue diamonds carry each respondent’s original political group as the dots move into answer groups. Orange follows the reader and the people who chose the same starting mark. **Unbounded** sets the headlines and large numbers. **Manrope** sets the labels and body copy.
 
 ## From the survey to the arc
 
 | Stage | People | Coverage |
 | --- | ---: | --- |
 | ESS11 extract | 50,116 records | 30 countries in the checked-in extract |
-| Eligible for the comparison | 22,123 respondents | The 22 EU member states present in that extract, with valid age and weight and self-placement of 0–4 or 6–10 |
+| Eligible for the comparison | 32,973 respondents | The 22 EU member states present in that extract, with valid age and weight and self-placement from 0 to 10 |
 | Drawn on the arc | 100 dots | One respondent per dot, with at least one dot for every selected country |
 
-The current comparison excludes the midpoint of the political scale (5). For each question, percentages use the respondents from the eligible pool whose answers fall into either displayed group. Neutral, missing and other responses outside those groups are excluded for that question. Estimates pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). The counts beside the percentages are unweighted.
+We group self-placement as left (0–4), centre (5) and right (6–10). Percentages use all displayed answer groups, including middle answers wherever the survey offered one. The arc reports missing and ungrouped responses separately. Estimates pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). The response counts are unweighted.
+
+The finale keeps the reader’s starting mark and compares each of their answers across the three groups. It also shows an example of shared agreement and the answer with the largest difference between groups.
 
 The arc is a deterministic weighted sample. After giving each country a place, the sampler allocates the other dots as close as possible to each country’s share of the survey weight. You can highlight a country, age group, gender, education level or religiosity level on the arc. The country filter changes the highlights on those 100 dots. The survey percentages continue to describe the pooled comparison.
 

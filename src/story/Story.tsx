@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import type { ReactNode, Ref } from 'react';
-import type { Score, StoryData } from '../domain/model.ts';
-import { ArcChart } from '../visualization/ArcChart.tsx';
-import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, integer, sharePercent } from './controls.tsx';
+import { sideLabels, sides } from '../domain/model.ts';
+import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts';
+import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
+import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { matchesHighlights } from './highlights.ts';
-import { sharedAnswer, summarizeGaps } from './takeaway.ts';
+import { takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession } from './session.ts';
+import type { Answers } from './session.ts';
 
 export function Wordmark() {
   return <span className="wordmark"><b>Left.</b> <b>Right.</b></span>;
@@ -54,7 +56,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   }
 
   if (state.step === 'conclusion') {
-    return <Conclusion data={data} headingRef={headingRef} hidden={showMethod}
+    return <Conclusion data={data} score={state.score} answers={state.answers} headingRef={headingRef} hidden={showMethod}
       onBack={() => navigate({ type: 'back' })} onRestart={() => navigate({ type: 'restart' })} />;
   }
 
@@ -62,7 +64,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   let cards: ReactNode;
   let controls: ReactNode;
   if (state.step === 'scale') {
-    heading = <>Are <mark>you</mark> <span className="left">left</span> or <span className="right">right</span>?</>;
+    heading = <>Where do <mark>you</mark> place yourself?</>;
     cards = <>
       <Fact value={integer.format(data.source.records)} caption="People interviewed" />
       <Fact value={data.source.countries} caption={`Countries, ${data.source.years}`} />
@@ -85,10 +87,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
-    const answer = result.question.options[result.choice === 'a' ? 0 : 1];
+    const answer = result.question.options[result.choice];
     heading = answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
-      : 'You chose “' + answer + '”';
+      : 'You chose “' + (answer ?? '') + '”';
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment} final={final}
       onContinue={() => navigate({ type: 'next' })} />;
   }
@@ -126,49 +128,66 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   </main>;
 }
 
-function Conclusion({ data, headingRef, hidden, onBack, onRestart }: {
-  data: StoryData; headingRef: Ref<HTMLHeadingElement>; hidden: boolean;
+function AnswerShares({ question, choice }: { question: StoryQuestion; choice: Choice }) {
+  return <dl className="conclusion-shares">
+    {sides.map(side => <div key={side} className={side}>
+      <dt>{sideLabels[side]}</dt>
+      <dd>{formatShare(question.stats[side][choice].percent)}</dd>
+    </div>)}
+  </dl>;
+}
+
+function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestart }: {
+  data: StoryData; score: Score; answers: Answers; headingRef: Ref<HTMLHeadingElement>; hidden: boolean;
   onBack: () => void; onRestart: () => void;
 }) {
-  const example = sharedAnswer(data.questions);
-  const gaps = summarizeGaps(data.questions);
-  let summary = 'People who place themselves on the same side can give different answers.';
-  if (gaps) {
-    const min = Math.round(gaps.min);
-    const max = Math.round(gaps.max);
-    const gap = min === max ? min : `${min}–${max}`;
-    const questions = gaps.comparableCount === 1 ? 'question' : 'questions';
-    const majority = gaps.sharedMajorityCount === 0
-      ? 'The two sides had no majority answer in common.'
-      : `Both sides had the same majority answer on ${gaps.sharedMajorityCount} of ${gaps.comparableCount}.`;
-    summary = `The left–right gap was ${gap} percentage points across ${gaps.comparableCount} ${questions}. ${majority}`;
-  }
+  const { agreement, widest } = takeawayExamples(data.questions);
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
       <button className="back-button" onClick={onBack}><Arrow back /> Back</button>
     </header>
-    <section className={`conclusion-grid${example ? ' has-example' : ''}`} aria-labelledby="story-heading">
-      <div className="conclusion-opening">
-        <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">
-          A label tells <mark>part</mark> of the story.
-        </h1>
-        <p>{summary}</p>
-      </div>
-      {example && <article className="conclusion-example">
-        <h2>{example.question.prompt}</h2>
-        <p>Chose “{example.question.options[example.choice === 'a' ? 0 : 1]}”</p>
-        <div className="conclusion-shares">
-          <div className="left"><strong>{sharePercent.format(example.left)}%</strong><span>On the left</span></div>
-          <div className="right"><strong>{sharePercent.format(example.right)}%</strong><span>On the right</span></div>
-        </div>
-        <small className="conclusion-denominator">Weighted shares among people who chose either answer.</small>
-      </article>}
-      <div className="conclusion-close">
-        <p>Before sorting people into camps, ask what they think about the issue.</p>
-        <Continue onClick={onRestart}>Start over</Continue>
+    <section className="conclusion-opening" aria-labelledby="story-heading">
+      <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">
+        A label tells <mark>part</mark> of the story.
+      </h1>
+      <div className="conclusion-mark">
+        <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
+        <span>Your starting mark <b>{score}</b></span>
       </div>
     </section>
+    <section aria-labelledby="personal-answers">
+      <h2 id="personal-answers">Your answers, side by side</h2>
+      <p className="conclusion-intro">The percentages show how many people in each group chose the same answer as you.</p>
+      <div className="conclusion-cards">
+        {data.questions.map((question, index) => {
+          const choice = answers[index];
+          if (choice === undefined) return null;
+          return <article key={question.id} className="conclusion-card">
+            <h3>{question.topic}</h3>
+            <p>You chose <b>“{question.options[choice]}”</b></p>
+            <AnswerShares question={question} choice={choice} />
+          </article>;
+        })}
+      </div>
+    </section>
+    {(agreement || widest) && <section aria-labelledby="group-patterns">
+      <h2 id="group-patterns">Where the groups agreed and differed</h2>
+      <div className="conclusion-cards">
+        {[
+          { title: 'A majority in every group', example: agreement },
+          { title: 'The widest gap', example: widest },
+        ].map(({ title, example }) => example && <article key={title} className="conclusion-card">
+          <h3>{title}</h3>
+          <p>{example.question.topic} · “{example.question.options[example.choice]}”</p>
+          <AnswerShares question={example.question} choice={example.choice} />
+        </article>)}
+      </div>
+    </section>}
+    <div className="conclusion-close">
+      <p>Where people place themselves gives a clue about what they might think. Ask them about the issue to find out.</p>
+      <Continue onClick={onRestart}>Start over</Continue>
+    </div>
     <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>
   </main>;
 }

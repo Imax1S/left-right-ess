@@ -1,10 +1,10 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
 import { scores, sideOf, sides } from '../domain/model.ts';
-import type { Choice, Dot, Score, StoryQuestion } from '../domain/model.ts';
+import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerBand, answerLayout, arcBand, arcLayout, comparisonHeight,
+  answerLayout, arcBand, arcLayout, comparisonHeight, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 
@@ -19,6 +19,22 @@ interface Props {
 
 type MotionStyle = CSSProperties & { '--delay': string };
 
+export function RespondentShape({ side, radius }: { side: Side; radius: number }) {
+  if (side === 'left') return <circle r={radius} />;
+  const diameter = Math.SQRT2 * radius;
+  return <rect x={-diameter / 2} y={-diameter / 2} width={diameter} height={diameter} rx="1.6"
+    transform={side === 'right' ? 'rotate(45)' : undefined} />;
+}
+
+export function ReaderGlyph({ score }: { score: Score | null }) {
+  return <>
+    {score === null || sideOf(score) === 'right'
+      ? <rect x="-12" y="-12" width="24" height="24" rx="4" transform="rotate(45)" />
+      : score === 5 ? <rect x="-15" y="-15" width="30" height="30" rx="5" /> : <circle r="17" />}
+    <text y="1">You</text>
+  </>;
+}
+
 export function ArcChart({ dots, score, highlightedIds, comparison, result, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
@@ -26,21 +42,23 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
   const dragPlacement = useRef(false);
   const canPlace = onPlace !== undefined;
   const arc = useMemo(() => arcLayout(dots, score), [dots, score]);
-  const questionId = result?.question.id;
+  const question = result?.question;
   const choice = result?.choice;
   const destination = result?.alignment.score;
   const groups = useMemo(
-    () => questionId && choice && destination !== undefined
-      ? answerLayout(dots, questionId, choice, destination, arc.radius)
+    () => question && choice && destination !== undefined
+      ? answerLayout(dots, question, choice, destination, arc.radius)
       : null,
-    [dots, questionId, choice, destination, arc.radius],
+    [dots, question, choice, destination, arc.radius],
   );
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
   const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
-  const leftLabel = result?.question.options[0] ?? '';
-  const rightLabel = result?.question.options[1] ?? '';
+  const omitted = groups && [
+    groups.missing > 0 ? groups.missing + ' no recorded answer' : '',
+    groups.other > 0 ? groups.other + ' outside the answer groups' : '',
+  ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
   const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}`;
@@ -100,26 +118,25 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
     .join(', ');
 
   return (
-    <figure className={figureClass} aria-label={groups
-      ? `Shown respondents: ${groups.counts.a} ${leftLabel}, ${groups.counts.b} ${rightLabel}. Your answer: ${choice === 'a' ? leftLabel : rightLabel}.`
-      : `Political self-placement of ${dots.length} survey respondents. ${score === null
-        ? 'Choose a sector for your mark.' : `Your mark is ${score} out of 10.`}`}>
+    <figure className={figureClass} aria-label={groups && question && choice
+      ? 'Shown respondents by answer. ' + groups.bands.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
+        + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
+      : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
+        ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups ? 'chart-layer is-hidden' : 'chart-layer'}>
-            <path d={arcBand(0, Math.PI / 2)} fill="var(--left-pale)" />
-            <path d={arcBand(Math.PI / 2, Math.PI)} fill="var(--right-pale)" />
+            {sides.map(side => <path key={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
             {score !== null && <path className="score-band" d={scoreBand(score)} />}
             {pointerLine && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
+            <text className="arc-end" x="200" y="211">5</text>
             <text className="arc-end" x="332" y="211">10</text>
           </g>
           <g className={groups ? 'chart-layer' : 'chart-layer is-hidden'}>
-            {sides.map(side => (
-              <path key={side} d={answerBand(side)}
-                className={groups && choice && groups.sides[choice] === side ? 'answer-band selected' : 'answer-band'} />
-            ))}
+            {groups?.bands.map(({ option, path }) =>
+              <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
           {dots.map((person, index) => {
             const answerPoint = answerPositions?.get(person.id);
@@ -135,19 +152,13 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
               opacity,
               '--delay': groups ? `${(index % 15) * 20}ms` : '0ms',
             };
-            const diameter = Math.SQRT2 * point.r;
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined} data-same-score={sameScore ? 'true' : undefined}>
-              {side === 'left'
-                ? <circle r={point.r} />
-                : <rect x={-diameter / 2} y={-diameter / 2} width={diameter} height={diameter} rx="1.6" transform="rotate(45)" />}
+              <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
           <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
-            {score === null || sideOf(score) === 'right'
-              ? <rect x="-12" y="-12" width="24" height="24" rx="4" transform="rotate(45)" />
-              : <circle r="17" />}
-            <text y="1">You</text>
+            <ReaderGlyph score={score} />
           </g>
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
             onClick={event => placeAt(event.clientX, event.clientY)} />}
@@ -160,16 +171,19 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
           <div className={`arc-drag-target ${pointers ? 'arc-drag-handle' : 'arc-drag-start'}`} aria-hidden="true"
             style={dragTargetStyle} onPointerDown={startDrag} onPointerMove={moveDrag} />
         </>}
-        {groups && <div className="cluster-caption">
-          {(groups.sides.a === 'left' ? ['a', 'b'] as const : ['b', 'a'] as const).map(option => (
+        {groups && question && <div className="cluster-caption">
+          {groups.bands.map(({ option, count }) => (
             <div key={option} className={choice === option ? 'selected' : undefined}>
-              <span>{option === 'a' ? leftLabel : rightLabel}</span>
-              <strong>{groups.counts[option]}</strong>
+              <span>{question.options[option]}</span>
+              <strong>{count}</strong>
             </div>
           ))}
         </div>}
       </div>
-      {!canPlace && score !== null && <figcaption className="arc-legend">People at your starting mark ({score})</figcaption>}
+      {!canPlace && score !== null && <figcaption className="arc-caption">
+        <span className="arc-legend">People at your starting mark ({score})</span>
+        {omitted && <span className="arc-omitted">{omitted}</span>}
+      </figcaption>}
     </figure>
   );
 }

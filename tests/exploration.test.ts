@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Dot } from '../src/domain/model.ts';
 import { matchesHighlights } from '../src/story/highlights.ts';
 import config from '../story.config.ts';
-import { sharedAnswer, summarizeGaps } from '../src/story/takeaway.ts';
+import { takeawayExamples } from '../src/story/takeaway.ts';
 import { ess11Source } from '../src/ess/source.ts';
 import { prepareStory } from '../src/domain/prepareStory.ts';
 
@@ -26,24 +26,23 @@ test('published dots carry the categorical ESS profile and the takeaway uses gen
   const profileKeys = new Set(story.dots.flatMap(dot => Object.keys(dot.profile ?? {})));
   assert.deepEqual([...profileKeys].sort(), ['age', 'education', 'gender', 'religiosity']);
 
-  const example = sharedAnswer(story.questions);
+  const { agreement: example } = takeawayExamples(story.questions);
   assert.equal(example?.question.id, 'freedom');
   assert.equal(example?.choice, 'a');
-  assert.equal(example?.left.toFixed(1), '95.4');
-  assert.equal(example?.right.toFixed(1), '87.2');
-  assert.equal(sharedAnswer([]), null);
+  assert.equal(example?.question.stats.left.a.percent?.toFixed(1), '89.4');
+  assert.equal(example?.question.stats.centre.a.percent?.toFixed(1), '82.4');
+  assert.equal(example?.question.stats.right.a.percent?.toFixed(1), '76.9');
 });
 
-test('the takeaway covers all configured questions and shows the spread in group differences', async () => {
+test('the takeaway shows both shared agreement and the widest gap', async () => {
   const story = await prepareStory(await ess11Source(), config);
-
-  const gaps = summarizeGaps(story.questions);
-  assert.equal(gaps?.comparableCount, 6);
-  assert.equal(gaps?.sharedMajorityCount, 5);
-  assert.equal(gaps?.min.toFixed(1), '3.0');
-  assert.equal(gaps?.max.toFixed(1), '27.7');
-  assert.equal(summarizeGaps([]), null);
-  assert.deepEqual(story.questions.map(question => question.correlation?.toFixed(2)), [
-    '-0.19', '-0.29', '-0.15', '-0.30', '-0.29', '0.03',
+  const { agreement, widest } = takeawayExamples(story.questions);
+  assert.equal(agreement?.question.id, 'freedom');
+  assert.equal(widest?.question.id, 'migration');
+  assert.equal(widest?.choice, 'a');
+  assert.equal(widest?.question.options.neutral, undefined);
+  assert.deepEqual(takeawayExamples([]), { agreement: null, widest: null });
+  assert.deepEqual(story.questions.map(question => question.association?.toFixed(2)), [
+    '0.12', '0.24', '0.10', '0.17', '0.14', '0.07',
   ]);
 });

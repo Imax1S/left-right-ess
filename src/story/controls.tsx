@@ -1,4 +1,4 @@
-import { scores, sideOf, sides } from '../domain/model.ts';
+import { questionChoices, scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from './answerAlignment.ts';
 
@@ -6,7 +6,7 @@ export const integer = new Intl.NumberFormat('en-GB');
 export const sharePercent = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
 
 export function placement(score: Score) {
-  return score < 5 ? 'Left of centre' : 'Right of centre';
+  return score === 5 ? 'Centre' : score < 5 ? 'Left of centre' : 'Right of centre';
 }
 
 export function Arrow({ back = false }: { back?: boolean }) {
@@ -42,14 +42,14 @@ export function ScaleControls({ score, shown, onPlace }: {
       aria-label="Your place on the left–right scale"
       aria-valuetext={score === null ? 'Position not chosen' : `${score}, ${placement(score)}`}
       type="range" min="0" max={scores.length - 1} step="1"
-      value={score === null ? scores.indexOf(4) : scores.indexOf(score)}
+      value={score === null ? scores.indexOf(5) : scores.indexOf(score)}
       onChange={event => onPlace(scores[event.currentTarget.valueAsNumber])}
       onClick={event => { if (score === null) onPlace(scores[event.currentTarget.valueAsNumber]); }} />
     <div className="scale-ticks" aria-label="Choose a position">
       {scores.map(value => <button key={value} onClick={() => onPlace(value)}
         aria-label={`Position ${value}`} aria-pressed={score === value}>{value}</button>)}
     </div>
-    <div className="scale-sides" aria-hidden="true"><span>← Left</span><span>Right →</span></div>
+    <div className="scale-sides" aria-hidden="true"><span>← Left</span><span>Centre</span><span>Right →</span></div>
     <div className="scale-readout">
       {score === null ? <p>You can drag the marker or use the slider.</p> : <>
         <strong className={sideOf(score)}>{score}</strong>
@@ -59,19 +59,25 @@ export function ScaleControls({ score, shown, onPlace }: {
   </div>;
 }
 
+const answerIcons = { a: 'm5 16 7 7L27 8', neutral: 'M7 16h18', b: 'm8 8 16 16M24 8 8 24' } as const;
+
 export function QuestionControls({ question, onAnswer }: {
   question: StoryQuestion; onAnswer: (choice: Choice) => void;
 }) {
-  return <div className="answer-options" role="group" aria-label="Choose your answer">
-    {question.options.map((label, index) => <button key={index}
-      onClick={() => onAnswer(index === 0 ? 'a' : 'b')}>
-      <svg aria-hidden="true" width="33" height="33" viewBox="0 0 32 32" fill="none">
-        <path d={index === 0 ? 'm5 16 7 7L27 8' : 'm8 8 16 16M24 8 8 24'} stroke="currentColor"
-          strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+  const options = questionChoices(question);
+  return <div className={options.length === 3 ? 'answer-options has-middle' : 'answer-options'}
+    role="group" aria-label="Choose your answer">
+    {options.map(choice => <button key={choice} onClick={() => onAnswer(choice)}>
+      <svg aria-hidden="true" width="29" height="29" viewBox="0 0 32 32" fill="none">
+        <path d={answerIcons[choice]} stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      <span>{label}</span>
+      <span>{question.options[choice]}</span>
     </button>)}
   </div>;
+}
+
+export function formatShare(percent: number | null) {
+  return percent === null ? '—' : sharePercent.format(percent) + '%';
 }
 
 export function ResultControls({ question, choice, alignment, final, onContinue }: {
@@ -80,10 +86,12 @@ export function ResultControls({ question, choice, alignment, final, onContinue 
 }) {
   const { gap, side: moreCommonOn } = alignment;
   const note = gap === null
-    ? 'A comparison needs responses from both sides.'
+    ? 'A comparison needs responses from at least two groups.'
     : moreCommonOn === null
-      ? 'Both sides chose this answer about as often.'
-      : `More common on the ${moreCommonOn} by ${sharePercent.format(gap)} percentage points.`;
+      ? 'The highest shares are tied at the displayed precision.'
+      : moreCommonOn === 'centre'
+        ? 'Most common among people who chose 5.'
+        : 'Most common on the ' + moreCommonOn + '.';
 
   return <>
     <section className="result-comparison" aria-labelledby="result-comparison-heading">
@@ -92,8 +100,8 @@ export function ResultControls({ question, choice, alignment, final, onContinue 
         {sides.map(side => {
           const { percent } = question.stats[side][choice];
           return <div key={side} className={'result-row ' + side}>
-            <span className="result-side">{side === 'left' ? 'Left' : 'Right'}</span>
-            <strong>{percent === null ? '—' : sharePercent.format(percent) + '%'}</strong>
+            <span className="result-side">{sideLabels[side]}</span>
+            <strong>{formatShare(percent)}</strong>
             <div className="result-bar" aria-hidden="true">
               <span style={{ '--share': (percent ?? 0) + '%' } as React.CSSProperties} />
             </div>
@@ -107,7 +115,7 @@ export function ResultControls({ question, choice, alignment, final, onContinue 
           {sides.map(side => {
             const { count, total } = question.stats[side][choice];
             return <div key={side}>
-              <dt>{side === 'left' ? 'Left' : 'Right'}</dt>
+              <dt>{sideLabels[side]}</dt>
               <dd>{total ? integer.format(count) + ' of ' + integer.format(total) : 'No included responses'}</dd>
             </div>;
           })}

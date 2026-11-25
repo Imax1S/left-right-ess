@@ -3,12 +3,15 @@ import type { Choice, Score } from '../domain/model.ts';
 import { isProfileValue } from '../domain/profiles.ts';
 import type { HighlightFilter } from './highlights.ts';
 
+export type Answers = Readonly<Partial<Record<number, Choice>>>;
+type Progress = { score: Score; answers: Answers };
+
 export type Session =
   | { step: 'scale'; score: Score | null }
   | { step: 'among'; score: Score; highlight: HighlightFilter | null }
-  | { step: 'question'; score: Score; index: number }
-  | { step: 'result'; score: Score; index: number; option: Choice }
-  | { step: 'conclusion'; score: Score; lastAnswer: Choice };
+  | (Progress & { step: 'question'; index: number })
+  | (Progress & { step: 'result'; index: number; option: Choice })
+  | (Progress & { step: 'conclusion' });
 
 export type StoryAction =
   | { type: 'place'; score: number }
@@ -36,27 +39,32 @@ export function createSessionReducer(questions: readonly string[], countries: re
           if (valid) return { ...state, highlight: selection };
         }
         if (action.type === 'back') return { step: 'scale', score };
-        if (action.type === 'start' && questions.length) return { step: 'question', score, index: 0 };
+        if (action.type === 'start' && questions.length) return { step: 'question', score, index: 0, answers: {} };
         break;
       case 'question':
-        if (action.type === 'answer') return { ...state, step: 'result', option: action.option };
+        if (action.type === 'answer') {
+          const answers = { ...state.answers, [state.index]: action.option };
+          return { ...state, step: 'result', option: action.option, answers };
+        }
         if (action.type === 'back') {
           return state.index === 0
             ? { step: 'among', score, highlight: null }
-            : { step: 'question', score, index: state.index - 1 };
+            : { step: 'question', score, index: state.index - 1, answers: state.answers };
         }
         break;
       case 'result':
-        if (action.type === 'back') return { step: 'question', score, index: state.index };
+        if (action.type === 'back') return { step: 'question', score, index: state.index, answers: state.answers };
         if (action.type === 'next') {
           return state.index + 1 < questions.length
-            ? { step: 'question', score, index: state.index + 1 }
-            : { step: 'conclusion', score, lastAnswer: state.option };
+            ? { step: 'question', score, index: state.index + 1, answers: state.answers }
+            : { step: 'conclusion', score, answers: state.answers };
         }
         break;
       case 'conclusion':
         if (action.type === 'back') {
-          return { step: 'result', score, index: questions.length - 1, option: state.lastAnswer };
+          const index = questions.length - 1;
+          const option = state.answers[index];
+          if (option) return { step: 'result', score, index, option, answers: state.answers };
         }
         if (action.type === 'restart') return initialSession;
         break;

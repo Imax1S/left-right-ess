@@ -3,14 +3,18 @@ import test from 'node:test';
 import { arcLayout, answerLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
 
+function question(id: string, neutral?: string) {
+  return { id, options: { a: 'Agree', neutral, b: 'Disagree' } };
+}
+
 test('arc and all answer bands keep people in bounds without overlap', () => {
   const dots = Array.from({ length: 200 }, (_, id) => ({
-    id: String(id), score: scores[Math.floor(id / 20)], country: 'EE',
+    id: String(id), score: scores[id % scores.length], country: 'EE',
     answers: { example: (id % 9 === 0 ? 'other' : id % 3 ? 'a' : 'b') as 'a' | 'b' | 'other' },
   }));
   const binaryCount = dots.filter(dot => dot.answers.example !== 'other').length;
   for (const [layout, count] of [
-    [arcLayout(dots), 200], [answerLayout(dots, 'example', 'a', 3), binaryCount],
+    [arcLayout(dots), 200], [answerLayout(dots, question('example'), 'a', 3), binaryCount],
   ] as const) {
     assert.equal(layout.dots.length, count);
     for (const [i, point] of layout.dots.entries()) {
@@ -28,15 +32,15 @@ test('density adapts when a configured sample concentrates on one score and answ
     id: String(id), score: 3 as const, country: 'EE', answers: { example: 'a' as const },
   }));
   assert.equal(arcLayout(dots).dots.length, 1600);
-  assert.equal(answerLayout(dots, 'example', 'a', 3).counts.a, 1600);
+  assert.equal(answerLayout(dots, question('example'), 'a', 3).bands[0].count, 1600);
 });
 
-test('dragging around the arc resolves every scale mark and skips the centre', () => {
+test('dragging around the arc resolves every scale mark including the centre', () => {
   for (const score of scores) {
     assert.equal(scoreFromArcPoint(readerOnArc(score).marker), score);
   }
   assert.equal(scoreFromArcPoint({ x: 200, y: 190 }), null);
-  assert.equal(scoreFromArcPoint({ x: 200, y: 10 }), 6);
+  assert.equal(scoreFromArcPoint({ x: 200, y: 10 }), 5);
   assert.equal(scoreFromArcPoint(unplacedMarker, true), null);
   assert.equal(scoreFromArcPoint(readerOnArc(8).marker, true), 8);
 });
@@ -46,7 +50,7 @@ test('answer groups share the arc footprint and keep the reader marker clear', (
     id: String(id), score: 3 as const, country: 'EE',
     answers: { example: (id % 8 === 0 ? 'other' : id % 3 ? 'a' : 'b') as 'a' | 'b' | 'other' },
   }));
-  const layout = answerLayout(dots, 'example', 'b', 8);
+  const layout = answerLayout(dots, question('example'), 'b', 8);
   for (const point of layout.dots) {
     const zone = point.person.answers.example;
     if (zone === 'a') assert.ok(point.x < 200);
@@ -61,8 +65,8 @@ test('puts the selected answer on the side of the reader’s destination', () =>
     { id: '1', score: 2 as const, country: 'EE', answers: { q: 'a' as const } },
     { id: '2', score: 8 as const, country: 'EE', answers: { q: 'b' as const } },
   ];
-  const layout = answerLayout(dots, 'q', 'a', 8);
-  assert.equal(layout.sides.a, 'right');
+  const layout = answerLayout(dots, question('q'), 'a', 8);
+  assert.deepEqual(layout.bands.map(band => band.option), ['b', 'a']);
   assert.ok(layout.dots.find(dot => dot.person.id === '1')!.x > 200);
   assert.ok(layout.dots.find(dot => dot.person.id === '2')!.x < 200);
   assert.deepEqual(layout.marker, readerOnArc(8).marker);
@@ -87,6 +91,18 @@ test('leaves out respondents on the question where they answered outside the two
     { id: '1', score: 2 as const, country: 'EE', answers: { first: 'other' as const, second: 'a' as const } },
     { id: '2', score: 8 as const, country: 'EE', answers: { first: 'b' as const, second: 'other' as const } },
   ];
-  assert.deepEqual(answerLayout(dots, 'first', 'a', 2).dots.map(dot => dot.person.id), ['2']);
-  assert.deepEqual(answerLayout(dots, 'second', 'a', 2).dots.map(dot => dot.person.id), ['1']);
+  assert.deepEqual(answerLayout(dots, question('first'), 'a', 2).dots.map(dot => dot.person.id), ['2']);
+  assert.deepEqual(answerLayout(dots, question('second'), 'a', 2).dots.map(dot => dot.person.id), ['1']);
+});
+
+test('keeps the middle answer and distinguishes missing and ungrouped responses', () => {
+  const dots = (['a', 'b', 'neutral', 'missing', 'other'] as const).map(option => ({
+    id: option, country: 'EE', score: 5 as const, answers: { q: option },
+  }));
+  const layout = answerLayout(dots, question('q', 'Neither'), 'neutral', 5);
+  assert.deepEqual(layout.bands.map(band => [band.option, band.count]), [['a', 1], ['neutral', 1], ['b', 1]]);
+  assert.deepEqual(layout.dots.map(dot => dot.person.id), ['a', 'neutral', 'b']);
+  assert.deepEqual(layout.marker, readerOnArc(5).marker);
+  assert.equal(layout.missing, 1);
+  assert.equal(layout.other, 1);
 });

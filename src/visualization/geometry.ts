@@ -1,11 +1,11 @@
-import { choices, scores, sideOf } from '../domain/model.ts';
-import type { Choice, Dot, Score, Side } from '../domain/model.ts';
+import { questionChoices, scores, sideOf } from '../domain/model.ts';
+import type { Choice, Dot, Question, Score, Side } from '../domain/model.ts';
 
 export interface Point { x: number; y: number }
 interface PlacedDot extends Point { person: Dot; r: number }
 
 export const viewBox = { width: 400, height: 242 };
-export const comparisonHeight = 256;
+export const comparisonHeight = 264;
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
@@ -36,6 +36,12 @@ function scoreAngles(score: Score): [number, number] {
 
 export function scoreBand(score: Score) {
   return arcBand(...scoreAngles(score));
+}
+
+export function placementBand(side: Side) {
+  const [start, end] = scoreAngles(5);
+  if (side === 'centre') return arcBand(start, end);
+  return side === 'left' ? arcBand(0, start) : arcBand(end, Math.PI);
 }
 
 export function scoreSectorOutline(score: Score): Point[] {
@@ -123,47 +129,44 @@ export function arcLayout(dots: readonly Dot[], selected: Score | null = null) {
   }) };
 }
 
-const middleGap = 0.035;
-const answerAngles: Record<Side, [number, number]> = {
-  left: [0, Math.PI / 2 - middleGap],
-  right: [Math.PI / 2 + middleGap, Math.PI],
-};
-
-export function answerBand(side: Side) {
-  return arcBand(...answerAngles[side]);
-}
-
 export function answerLayout(
-  dots: readonly Dot[], questionId: string, choice: Choice, markerScore: Score, radiusLimit = 6.7,
+  dots: readonly Dot[], question: Pick<Question, 'id' | 'options'>, choice: Choice, markerScore: Score, radiusLimit = 6.7,
 ) {
-  const groups = {
-    a: dots.filter(dot => dot.answers[questionId] === 'a'),
-    b: dots.filter(dot => dot.answers[questionId] === 'b'),
-  };
-  const marker = readerOnArc(markerScore).marker;
-  const chosenSide = sideOf(markerScore);
-  const otherSide = chosenSide === 'left' ? 'right' : 'left';
-  const sides: Record<Choice, Side> = choice === 'a'
-    ? { a: chosenSide, b: otherSide }
-    : { a: otherSide, b: chosenSide };
+  const options = [...questionChoices(question)];
+  const width = Math.PI / options.length;
+  const originalIndex = options.indexOf(choice);
+  const side = sideOf(markerScore);
+  const selectedIndex = side === 'left' ? 0 : side === 'right' ? options.length - 1
+    : options.length === 3 ? 1 : originalIndex;
+
+  // Place the reader's answer near the political group where it is most common.
+  [options[originalIndex], options[selectedIndex]] = [options[selectedIndex], options[originalIndex]];
+  const groups = options.map((option, i) => ({
+    option,
+    people: dots.filter(dot => dot.answers[question.id] === option),
+    start: i * width + (i === 0 ? 0 : 0.025),
+    end: (i + 1) * width - (i + 1 === options.length ? 0 : 0.025),
+  }));
+
+  const { start, end } = groups[selectedIndex];
+  const preferredAngle = (scores.indexOf(markerScore) + 0.5) * sectorAngle;
+  const marker = polar(Math.max(start + 0.17, Math.min(end - 0.17, preferredAngle)), 132);
   let r = radiusLimit;
-  const slotsInBand = (option: Choice) => bandSlots(...answerAngles[sides[option]], r, groups[option].length)
-    .filter(point => option !== choice || clearOfReader(point, marker, r));
-  const makeSlots = () => ({
-    a: slotsInBand('a'),
-    b: slotsInBand('b'),
-  });
+  const makeSlots = () => groups.map(({ option, people, start, end }) => bandSlots(start, end, r, people.length)
+    .filter(point => option !== choice || clearOfReader(point, marker, r)));
   let slots = makeSlots();
-  while (choices.some(answer => slots[answer].length < groups[answer].length)) {
+  while (groups.some(({ people }, i) => slots[i].length < people.length)) {
     r *= 0.88;
     slots = makeSlots();
   }
-  const positioned: PlacedDot[] = choices.flatMap(answer => spread(slots[answer], groups[answer].length)
-    .map((point, i) => ({ ...point, r, person: groups[answer][i] })));
+  const placed: PlacedDot[] = groups.flatMap(({ people }, i) =>
+    spread(slots[i], people.length).map((point, j) => ({ ...point, r, person: people[j] })));
+  const missing = dots.filter(dot => !dot.answers[question.id] || dot.answers[question.id] === 'missing').length;
   return {
     marker,
-    sides,
-    dots: positioned,
-    counts: { a: groups.a.length, b: groups.b.length },
+    dots: placed,
+    bands: groups.map(({ option, people, start, end }) => ({ option, count: people.length, path: arcBand(start, end) })),
+    missing,
+    other: dots.length - placed.length - missing,
   };
 }

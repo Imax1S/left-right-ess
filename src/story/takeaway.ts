@@ -1,43 +1,35 @@
-import { choices } from '../domain/model.ts';
+import { questionChoices, sides } from '../domain/model.ts';
 import type { Choice, StoryQuestion } from '../domain/model.ts';
 
-interface SharedAnswer {
+interface Example {
   question: StoryQuestion;
   choice: Choice;
-  left: number;
-  right: number;
 }
 
-export function sharedAnswer(questions: readonly StoryQuestion[]): SharedAnswer | null {
-  let example: SharedAnswer | null = null;
-  let overlap = 50;
+export function takeawayExamples(questions: readonly StoryQuestion[]) {
+  let agreement: Example | null = null;
+  let widest: Example | null = null;
+  let commonShare = 50;
+  let widestGap = 0;
+
   for (const question of questions) {
-    for (const choice of choices) {
-      const left = question.stats.left[choice].percent;
-      const right = question.stats.right[choice].percent;
-      if (left === null || right === null) continue;
-      const shared = Math.min(left, right);
-      if (shared <= overlap) continue;
-      overlap = shared;
-      example = { question, choice, left, right };
+    for (const choice of questionChoices(question)) {
+      const shares = sides.map(side => question.stats[side][choice].percent);
+      if (shares.some(share => share === null)) continue;
+      const available = shares.filter(share => share !== null);
+      const min = Math.min(...available);
+      const max = Math.max(...available);
+      const gap = Math.round(max * 10) - Math.round(min * 10);
+      if (min > commonShare) {
+        commonShare = min;
+        agreement = { question, choice };
+      }
+      if (gap > widestGap) {
+        widestGap = gap;
+        widest = { question, choice };
+      }
     }
   }
-  return example;
-}
 
-export function summarizeGaps(questions: readonly StoryQuestion[]) {
-  const gaps: number[] = [];
-  let sharedMajorityCount = 0;
-  for (const { stats } of questions) {
-    const left = stats.left.a.percent;
-    const right = stats.right.a.percent;
-    if (left === null || right === null) continue;
-
-    gaps.push(Math.abs(left - right));
-    if ((left > 50 && right > 50) || (left < 50 && right < 50)) sharedMajorityCount++;
-  }
-
-  return gaps.length
-    ? { min: Math.min(...gaps), max: Math.max(...gaps), comparableCount: gaps.length, sharedMajorityCount }
-    : null;
+  return { agreement, widest };
 }

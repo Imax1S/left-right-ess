@@ -14,13 +14,24 @@ interface Extract {
   }>;
 }
 
+const middleLabels: Partial<Record<EssQuestion['type'], string>> = {
+  agreement: 'Neither agree nor disagree',
+  policy: 'Neither in favour nor against',
+  scale: 'Midpoint (5)',
+  climate: 'Somewhat worried',
+  climateCause: 'About equally',
+  influence: 'Some',
+};
+
 function classify(type: EssQuestion['type'], value: number | null, climateCause: number | null): Answer {
-  if (value === null || !Number.isInteger(value)) return 'other';
-  if (type === 'scale') return value < 0 || value > 10 || value === 5 ? 'other' : value < 5 ? 'a' : 'b';
-  if (type === 'vote') return value === 1 ? 'a' : value === 2 ? 'b' : 'other';
-  if (type === 'migration') return value < 1 || value > 4 ? 'other' : value <= 2 ? 'a' : 'b';
-  if (type === 'value') return value < 1 || value > 6 ? 'other' : value <= 3 ? 'a' : 'b';
-  if (value < 1 || value > 5 || value === 3 || (type === 'climate' && climateCause === 55)) return 'other';
+  if ((type === 'climate' && climateCause === 55) || (type === 'climateCause' && value === 55)) return 'other';
+  if (value === null || !Number.isInteger(value)) return 'missing';
+  if (type === 'scale') return value < 0 || value > 10 ? 'missing' : value === 5 ? 'neutral' : value < 5 ? 'a' : 'b';
+  if (type === 'vote') return value === 1 ? 'a' : value === 2 ? 'b' : value === 3 ? 'other' : 'missing';
+  if (type === 'migration') return value < 1 || value > 4 ? 'missing' : value <= 2 ? 'a' : 'b';
+  if (type === 'value') return value < 1 || value > 6 ? 'missing' : value <= 3 ? 'a' : 'b';
+  if (value < 1 || value > 5) return 'missing';
+  if (value === 3) return 'neutral';
   if (type === 'climate') return value >= 4 ? 'a' : 'b';
   return value <= 2 ? 'a' : 'b';
 }
@@ -93,8 +104,8 @@ export async function ess11Source(
           countries: codes.length,
         },
         countries,
-        questions: questions.map(({ id, short, title, labels, note }) => ({
-          id, topic: short, prompt: title, options: labels, grouping: note,
+        questions: questions.map(({ id, short, title, labels, note, type }) => ({
+          id, topic: short, prompt: title, options: { a: labels[0], neutral: middleLabels[type], b: labels[1] }, grouping: note,
         })),
         people,
       };
