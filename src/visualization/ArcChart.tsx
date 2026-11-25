@@ -1,10 +1,10 @@
 import { useMemo, useRef } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, PointerEvent } from 'react';
 import { sideOf } from '../domain/model.ts';
 import type { Choice, Dot, Score, StoryQuestion } from '../domain/model.ts';
 import {
   answerBand, answerLayout, arcBand, arcLayout, comparisonHeight,
-  readerOnArc, scoreBand, scoreFromArcPoint, viewBox,
+  readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, viewBox,
 } from './geometry.ts';
 
 interface Props {
@@ -42,6 +42,23 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
     const mark = scoreFromArcPoint(point);
     if (mark !== null && mark !== score) onPlace?.(mark);
   }
+
+  function startDrag(event: PointerEvent<HTMLDivElement>) {
+    if (event.isPrimary && event.button === 0) {
+      event.preventDefault();
+      event.currentTarget.setPointerCapture(event.pointerId);
+    }
+  }
+
+  function moveDrag(event: PointerEvent<HTMLDivElement>) {
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      placeAt(event.clientX, event.clientY);
+    }
+  }
+
+  const sectorOutline = onPlace && scoreSectorOutline(score)
+    .map(({ x, y }) => `${x / viewBox.width * 100}% ${y / viewBox.height * 100}%`)
+    .join(', ');
 
   return (
     <figure className={figureClass} aria-label={groups
@@ -94,24 +111,19 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
             onClick={event => placeAt(event.clientX, event.clientY)} />}
         </svg>
-        {onPlace && <div className="arc-drag-handle" aria-hidden="true"
-          style={{
-            left: `${pointers.start.x / viewBox.width * 100}%`,
-            top: `${pointers.start.y / viewBox.height * 100}%`,
-            width: `${Math.hypot(pointers.end.x - pointers.start.x, pointers.end.y - pointers.start.y) / viewBox.width * 100}%`,
-            rotate: `${Math.atan2(pointers.end.y - pointers.start.y, pointers.end.x - pointers.start.x)}rad`,
-          }}
-          onPointerDown={event => {
-            if (event.isPrimary && event.button === 0) {
-              event.preventDefault();
-              event.currentTarget.setPointerCapture(event.pointerId);
-            }
-          }}
-          onPointerMove={event => {
-            if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-              placeAt(event.clientX, event.clientY);
-            }
-          }} />}
+        {onPlace && <>
+          <div className="arc-drag-target arc-drag-sector" aria-hidden="true"
+            style={{ clipPath: `polygon(${sectorOutline})` }}
+            onPointerDown={startDrag} onPointerMove={moveDrag} />
+          <div className="arc-drag-target arc-drag-handle" aria-hidden="true"
+            style={{
+              left: `${pointers.start.x / viewBox.width * 100}%`,
+              top: `${pointers.start.y / viewBox.height * 100}%`,
+              width: `${Math.hypot(pointers.end.x - pointers.start.x, pointers.end.y - pointers.start.y) / viewBox.width * 100}%`,
+              rotate: `${Math.atan2(pointers.end.y - pointers.start.y, pointers.end.x - pointers.start.x)}rad`,
+            }}
+            onPointerDown={startDrag} onPointerMove={moveDrag} />
+        </>}
         {groups && <div className="cluster-caption">
           {(['a', 'b'] as const).map((option, index) => (
             <div key={option} className={choice === option ? 'selected' : undefined}>

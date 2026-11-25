@@ -27,9 +27,26 @@ export function arcBand(start: number, end: number) {
     L ${insideEnd.x} ${insideEnd.y} A ${inner} ${inner} 0 0 0 ${insideStart.x} ${insideStart.y} Z`;
 }
 
-export function scoreBand(score: Score) {
+function scoreAngles(score: Score): [number, number] {
   const start = scores.indexOf(score) * sectorAngle;
-  return arcBand(start, start + sectorAngle);
+  return [start, start + sectorAngle];
+}
+
+export function scoreBand(score: Score) {
+  return arcBand(...scoreAngles(score));
+}
+
+export function scoreSectorOutline(score: Score): Point[] {
+  const [from, to] = scoreAngles(score);
+  const start = Math.max(0, from - 0.008);
+  const end = Math.min(Math.PI, to + 0.008);
+  const angles = Array.from({ length: 9 }, (_, i) => start + (end - start) * i / 8);
+  // Extend through the outline stroke. The HTML hit area keeps touch scrolling
+  // disabled only for the selected sector and the handle.
+  return [
+    ...angles.map(angle => polar(angle, outer + 1.2)),
+    ...angles.reverse().map(angle => polar(angle, inner - 1.2)),
+  ];
 }
 
 export function readerOnArc(score: Score) {
