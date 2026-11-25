@@ -38,7 +38,7 @@ export function ScaleControls({ score, shown, onPlace, onConfirm }: {
     <div className="scale-controls">
       <div className="scale-readout">
         {score === null
-          ? <div><b>Choose your position</b><p>Drag your marker, tap a sector or use the scale.</p></div>
+          ? <div><b>Choose your position</b><p>You can also drag your marker or use the scale.</p></div>
           : <>
             <strong className={sideOf(score)}>{score}</strong>
             <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>

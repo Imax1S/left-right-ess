@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import { sideOf, sides } from '../domain/model.ts';
+import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
@@ -32,6 +32,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
     [dots, questionId, choice, destination, arc.radius],
   );
   const pointers = score === null ? null : readerOnArc(score);
+  const showPlacementHint = score === null && onPlace !== undefined;
   const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const leftLabel = result?.question.options[0] ?? '';
   const rightLabel = result?.question.options[1] ?? '';
@@ -83,6 +84,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
           <g className={groups ? 'chart-layer is-hidden' : 'chart-layer'}>
             <path d={arcBand(0, Math.PI / 2)} fill="var(--left-pale)" />
             <path d={arcBand(Math.PI / 2, Math.PI)} fill="var(--right-pale)" />
+            {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
             {score !== null && <path className="score-band" d={scoreBand(score)} />}
             {pointerLine && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
@@ -125,6 +127,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
             onClick={event => placeAt(event.clientX, event.clientY)} />}
         </svg>
+        {showPlacementHint && <p className="arc-start-hint" aria-hidden="true">Pick a sector</p>}
         {onPlace && <>
           {sectorOutline && <div className="arc-drag-target arc-drag-sector" aria-hidden="true"
             style={{ clipPath: `polygon(${sectorOutline})` }}
