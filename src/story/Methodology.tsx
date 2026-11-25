@@ -9,7 +9,7 @@ export function Methodology({ data }: { data: StoryData }) {
     <section>
       <h2>The survey</h2>
       <p>{data.source.title}. This release extract has {integer.format(data.source.records)} records from {data.source.countries} countries
-        ({data.source.years}). The comparison in this story uses {data.countries.length} selected countries and {integer.format(data.eligibleCount)} eligible records.</p>
+        ({data.source.years}). This story draws on {integer.format(data.eligibleCount)} eligible records across {data.countries.length} selected countries.</p>
       <p>{data.countries.map(country => country.name).join(', ')}.</p>
     </section>
     <section>
@@ -22,11 +22,12 @@ export function Methodology({ data }: { data: StoryData }) {
       <p>Each of the {integer.format(data.dots.length)} dots is a distinct survey respondent. Every selected country has at least one dot.
         We allocate the remaining places to get as close as possible to each country’s share of the survey weight.
         Within each country, we select respondents deterministically using their survey weights.
-        The same people move to their recorded answer group on each question. A country choice highlights points for the placement step.</p>
+        Each result shows the people in this sample whose answers fall into one of the two groups. A country choice highlights points for the placement step.</p>
       <p>Your marker moves to the other side when your answer was more common there at the displayed precision.
         Each question starts from the position you chose.</p>
-      <p>Percentages use the full eligible pool. Each answer’s share is its sum of weights divided by the total weight within the same political group.
-        The count beside each percentage is an unweighted count. Midpoints, missing and other responses stay in the denominator.
+      <p>For each question, percentages compare respondents whose answers fall into one of the two groups. We exclude neutral, missing and other responses.
+        Each percentage divides the weight of the selected answer by the weight of both answer groups on the same political side.
+        The count beside each percentage is an unweighted count.
         We combine the ESS post-stratification and population weights (<code>pspwght × pweight</code>) for the pooled comparison.</p>
     </section>
     <section>

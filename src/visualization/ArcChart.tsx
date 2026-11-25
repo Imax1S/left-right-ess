@@ -36,7 +36,8 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
   const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const leftLabel = result?.question.options[0] ?? '';
   const rightLabel = result?.question.options[1] ?? '';
-  const positions = new Map((groups ?? arc).dots.map(dot => [dot.person.id, dot]));
+  const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
+  const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
   const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
@@ -76,7 +77,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
 
   return (
     <figure className={figureClass} aria-label={groups
-      ? `Shown respondents: ${groups.counts.a} ${leftLabel}, ${groups.counts.b} ${rightLabel}, ${groups.counts.other} other responses. Your answer: ${choice === 'a' ? leftLabel : rightLabel}.`
+      ? `Shown respondents: ${groups.counts.a} ${leftLabel}, ${groups.counts.b} ${rightLabel}. Your answer: ${choice === 'a' ? leftLabel : rightLabel}.`
       : `Political self-placement of ${dots.length} survey respondents. ${score === null
         ? 'Choose a sector for your mark.' : `Your mark is ${score} out of 10.`}`}>
       <div className="chart-surface">
@@ -95,14 +96,12 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
               <path key={side} d={answerBand(side)}
                 className={groups && choice && groups.sides[choice] === side ? 'answer-band selected' : 'answer-band'} />
             ))}
-            {!!groups?.counts.other && <text className="other-caption" x="200" y="139">
-              Other · {groups.counts.other}
-            </text>}
           </g>
           {dots.map((person, index) => {
-            const point = positions.get(person.id)!;
+            const answerPoint = answerPositions?.get(person.id);
+            const point = answerPoint ?? arcPositions.get(person.id)!;
             const side = sideOf(person.score);
-            const opacity = groups ? 1 : country
+            const opacity = groups ? (answerPoint ? 1 : 0) : country
               ? person.country === country ? 1 : 0.27
               : score === null ? 0.66 : person.score === score ? 1 : 0.5;
             const style: MotionStyle = {

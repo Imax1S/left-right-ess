@@ -8,13 +8,14 @@ test('arc and all answer bands keep people in bounds without overlap', () => {
     id: String(id), score: scores[Math.floor(id / 20)], country: 'EE',
     answers: { example: (id % 9 === 0 ? 'other' : id % 3 ? 'a' : 'b') as 'a' | 'b' | 'other' },
   }));
-  for (const [layout, height] of [
-    [arcLayout(dots), viewBox.height], [answerLayout(dots, 'example', 'a', 3), viewBox.height],
+  const binaryCount = dots.filter(dot => dot.answers.example !== 'other').length;
+  for (const [layout, count] of [
+    [arcLayout(dots), 200], [answerLayout(dots, 'example', 'a', 3), binaryCount],
   ] as const) {
-    assert.equal(layout.dots.length, 200);
+    assert.equal(layout.dots.length, count);
     for (const [i, point] of layout.dots.entries()) {
       assert.ok(point.x >= point.r && point.x <= 400 - point.r);
-      assert.ok(point.y >= point.r && point.y <= height - point.r);
+      assert.ok(point.y >= point.r && point.y <= viewBox.height - point.r);
       for (const previous of layout.dots.slice(0, i)) {
         assert.ok(Math.hypot(point.x - previous.x, point.y - previous.y) >= point.r + previous.r - 0.001);
       }
@@ -24,10 +25,10 @@ test('arc and all answer bands keep people in bounds without overlap', () => {
 
 test('density adapts when a configured sample concentrates on one score and answer', () => {
   const dots = Array.from({ length: 1600 }, (_, id) => ({
-    id: String(id), score: 3 as const, country: 'EE', answers: { example: 'other' as const },
+    id: String(id), score: 3 as const, country: 'EE', answers: { example: 'a' as const },
   }));
   assert.equal(arcLayout(dots).dots.length, 1600);
-  assert.equal(answerLayout(dots, 'example', 'a', 3).counts.other, 1600);
+  assert.equal(answerLayout(dots, 'example', 'a', 3).counts.a, 1600);
 });
 
 test('dragging around the arc resolves every scale mark and skips the centre', () => {
@@ -79,4 +80,13 @@ test('reserves room for the reader in the selected score band', () => {
     assert.ok(Math.hypot(dot.x - marker.x, dot.y - marker.y) >= dot.r + 18);
   }
   assert.deepEqual(placed.dots.filter(dot => dot.person.score === 0), initial.dots.filter(dot => dot.person.score === 0));
+});
+
+test('leaves out respondents on the question where they answered outside the two choices', () => {
+  const dots = [
+    { id: '1', score: 2 as const, country: 'EE', answers: { first: 'other' as const, second: 'a' as const } },
+    { id: '2', score: 8 as const, country: 'EE', answers: { first: 'b' as const, second: 'other' as const } },
+  ];
+  assert.deepEqual(answerLayout(dots, 'first', 'a', 2).dots.map(dot => dot.person.id), ['2']);
+  assert.deepEqual(answerLayout(dots, 'second', 'a', 2).dots.map(dot => dot.person.id), ['1']);
 });

@@ -20,7 +20,7 @@ Edit [story.config.ts](story.config.ts). Vite rebuilds the prepared data when th
 
 - `questions` lists question IDs in display order. The [ESS11 catalogue](src/ess/questions.ts) defines the prompt, button labels and grouping for each supported question.
 - `countries` lists the country codes in the comparison. These also determine which countries the reader can highlight on the placement screen.
-- `dotCount` must be at least the number of selected countries. Each eligible country gets at least one dot, and the rest of the places follow their weighted proportions as closely as possible. The chart uses the same respondents on each question.
+- `dotCount` must be at least the number of selected countries. Each eligible country gets at least one dot, and the rest of the places follow their weighted proportions as closely as possible. Each result shows the respondents in that sample whose answers match either displayed option.
 
 ## Code
 
@@ -35,7 +35,7 @@ Adapted from [European Social Survey Round 11, edition 4.2](https://doi.org/10.2
 
 The build uses the extract in `data/ess11.json`. To regenerate it from the official edition 4.2 CSV, run `python3 scripts/import-ess11.py /path/to/ESS11e04_2.csv`. The importer checks the weights against the ESS analysis weight.
 
-The browser receives a sample plus aggregate statistics. The denominator is the full eligible group on each side of the scale, weighted by `pspwght × pweight`. Midpoints, missing and other responses stay in the denominator. The “Data & methodology” page explains the comparison and the grouping for each question.
+The browser receives a sample plus aggregate statistics. For each question, the denominator on each side of the scale includes respondents whose answers fall into either displayed group. Percentages are weighted by `pspwght × pweight`. Neutral, missing and other responses are excluded from that question. The “Data & methodology” page explains the comparison and the grouping for each question.
 
 Manrope and Unbounded are distributed by Fontsource under the SIL Open Font License. See [font notices](public/LICENSE-FONTS.txt). The [previous release](https://github.com/Imax1S/left-right-ess/tree/531850324ac64a003163966b349ef478f917756b) included Canvas code adapted from [The Pudding’s Life After](https://github.com/the-pudding/lifeafter). Its notice is retained in [LICENSE-THE-PUDDING.txt](LICENSE-THE-PUDDING.txt). The survey data license is separate from the website code.
 

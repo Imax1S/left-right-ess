@@ -7,7 +7,7 @@ export const ess11Questions = [
     short: "Income gap",
     title: "Should the state reduce income differences?",
     labels: ["Agree", "Disagree"],
-    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is shown separately.",
+    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is excluded from the comparison.",
   },
   {
     id: "migration",
@@ -16,7 +16,7 @@ export const ess11Questions = [
     short: "Immigration from poorer countries",
     title: "How many people from poorer countries outside Europe should be allowed to come and live here?",
     labels: ["Allow many / some", "Allow a few / none"],
-    note: "Four response categories: allow many / some versus allow a few / none. Refusals and missing responses are shown separately.",
+    note: "Four response categories: allow many / some versus allow a few / none. Refusals and missing responses are excluded from the comparison.",
   },
   {
     id: "freedom",
@@ -25,7 +25,7 @@ export const ess11Questions = [
     short: "Freedom to live",
     title: "Should gay and lesbian people live as they wish?",
     labels: ["Agree", "Disagree"],
-    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is shown separately.",
+    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is excluded from the comparison.",
   },
   {
     id: "adoption",
@@ -34,7 +34,7 @@ export const ess11Questions = [
     short: "Equal adoption rights",
     title: "Should same-sex couples have the same rights to adopt children as opposite-sex couples?",
     labels: ["Agree", "Disagree"],
-    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is shown separately.",
+    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is excluded from the comparison.",
   },
   {
     id: "europe",
@@ -43,7 +43,7 @@ export const ess11Questions = [
     short: "European unification",
     title: "Has European unification gone too far, or should it go further?",
     labels: ["Gone too far · 0–4", "Go further · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "ethnicMigration",
@@ -52,7 +52,7 @@ export const ess11Questions = [
     short: "Immigration & ethnicity",
     title: "How many immigrants of a different race or ethnic group should be allowed to come and live here?",
     labels: ["Allow many / some", "Allow a few / none"],
-    note: "Four response categories: allow many / some versus allow a few / none. Refusals and missing responses are shown separately.",
+    note: "Four response categories: allow many / some versus allow a few / none. Refusals and missing responses are excluded from the comparison.",
   },
   {
     id: "parliament",
@@ -61,7 +61,7 @@ export const ess11Questions = [
     short: "Trust in parliament",
     title: "How much do you trust your country’s parliament?",
     labels: ["Low trust · 0–4", "High trust · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "climate",
@@ -70,7 +70,7 @@ export const ess11Questions = [
     short: "Climate concern",
     title: "How worried are you about climate change?",
     labels: ["Very / extremely worried", "Not very / not at all"],
-    note: "Five levels of concern. Somewhat worried and respondents who do not think the climate is changing are shown separately.",
+    note: "Five levels of concern. Somewhat worried and respondents who do not think the climate is changing are excluded from the comparison.",
   },
   {
     id: "influence",
@@ -79,7 +79,7 @@ export const ess11Questions = [
     short: "Political influence",
     title: "How much does the political system allow people like you to have a say in what the government does?",
     labels: ["Not at all / very little", "A lot / a great deal"],
-    note: "Five response categories. The middle response, some, is shown separately.",
+    note: "Five response categories. The middle response, some, is excluded from the comparison.",
   },
   {
     id: "vote",
@@ -88,7 +88,7 @@ export const ess11Questions = [
     short: "Voting",
     title: "Did you vote in the last national election?",
     labels: ["Yes", "No"],
-    note: "Respondents not eligible to vote are shown separately. Elections took place on different dates across countries; this is not a single EU turnout measure.",
+    note: "The comparison includes respondents who were eligible to vote. The results describe participation in each respondent’s last national election, held on different dates across countries.",
   },
   {
     id: "immigrationEconomy",
@@ -97,7 +97,7 @@ export const ess11Questions = [
     short: "Immigration & the economy",
     title: "Is immigration bad or good for the country’s economy?",
     labels: ["Bad · 0–4", "Good · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "immigrationCulture",
@@ -106,7 +106,7 @@ export const ess11Questions = [
     short: "Immigration & culture",
     title: "Is the country’s cultural life undermined or enriched by immigration?",
     labels: ["Undermined · 0–4", "Enriched · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "obedience",
@@ -115,7 +115,7 @@ export const ess11Questions = [
     short: "Obedience & authority",
     title: "Are obedience and respect for authority the most important values children should learn?",
     labels: ["Agree", "Disagree"],
-    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is shown separately.",
+    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is excluded from the comparison.",
   },
   {
     id: "loyalty",
@@ -124,7 +124,7 @@ export const ess11Questions = [
     short: "Loyalty to leaders",
     title: "Is loyalty to our leaders what this country needs most?",
     labels: ["Agree", "Disagree"],
-    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is shown separately.",
+    note: "Five response categories. Agree / strongly agree and disagree / strongly disagree are grouped. The midpoint is excluded from the comparison.",
   },
   {
     id: "genderSeats",
@@ -133,7 +133,7 @@ export const ess11Questions = [
     short: "Equal seats in parliament",
     title: "Do you favour a law requiring equal numbers of women and men in parliament?",
     labels: ["In favour", "Against"],
-    note: "Five response categories: strongly / somewhat in favour versus somewhat / strongly against. Neither is shown separately.",
+    note: "Five response categories: strongly / somewhat in favour versus somewhat / strongly against. Neither is excluded from the comparison.",
   },
   {
     id: "equalPay",
@@ -142,7 +142,7 @@ export const ess11Questions = [
     short: "Equal pay",
     title: "Do you favour fines for companies paying men more than women for the same work?",
     labels: ["In favour", "Against"],
-    note: "Five response categories: strongly / somewhat in favour versus somewhat / strongly against. Neither is shown separately.",
+    note: "Five response categories: strongly / somewhat in favour versus somewhat / strongly against. Neither is excluded from the comparison.",
   },
   {
     id: "climateCause",
@@ -151,7 +151,7 @@ export const ess11Questions = [
     short: "Causes of climate change",
     title: "Is climate change caused by natural processes, human activity, or both?",
     labels: ["Mostly natural", "Mostly human"],
-    note: "Entirely / mainly natural processes versus mainly / entirely human activity. About equally and climate-not-changing responses are shown separately.",
+    note: "Entirely / mainly natural processes versus mainly / entirely human activity. About equally and climate-not-changing responses are excluded from the comparison.",
   },
   {
     id: "democracy",
@@ -160,7 +160,7 @@ export const ess11Questions = [
     short: "Satisfaction with democracy",
     title: "How satisfied are you with the way democracy works in your country?",
     labels: ["Dissatisfied · 0–4", "Satisfied · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "socialTrust",
@@ -169,7 +169,7 @@ export const ess11Questions = [
     short: "Trust in other people",
     title: "Can most people be trusted, or can you not be too careful?",
     labels: ["Be careful · 0–4", "Trust people · 6–10"],
-    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is shown separately. These boundaries were chosen for this visualisation.",
+    note: "Original scale 0–10. We group 0–4 and 6–10; the midpoint (5) is excluded from the comparison. These boundaries were chosen for this visualisation.",
   },
   {
     id: "understanding",

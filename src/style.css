@@ -198,7 +198,6 @@ a { color: inherit; text-underline-offset: 0.2em; }
   text-transform: uppercase;
 }
 .cluster-caption strong { font: 820 clamp(17px, 5vw, 31px)/1 var(--display); letter-spacing: -0.05em; }
-.other-caption { fill: var(--muted); font-size: 11px; font-weight: 820; text-anchor: middle; }
 
 .story-controls { grid-area: controls; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; align-content: start; }
 .survey-intro h2, .country-picker h2 {

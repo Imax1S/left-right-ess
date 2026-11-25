@@ -3,7 +3,7 @@ export type Score = (typeof scores)[number];
 export type Side = 'left' | 'right';
 export type Choice = 'a' | 'b';
 export type Answer = Choice | 'other';
-export const answers = ['a', 'b', 'other'] as const;
+export const choices = ['a', 'b'] as const;
 export const sides = ['left', 'right'] as const;
 
 export function isScore(value: number): value is Score {
@@ -75,7 +75,7 @@ export interface Share {
 }
 
 export interface StoryQuestion extends Question {
-  stats: Record<Side, Record<Answer, Share>>;
+  stats: Record<Side, Record<Choice, Share>>;
 }
 
 export interface StoryData {

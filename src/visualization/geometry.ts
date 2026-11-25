@@ -1,5 +1,5 @@
-import { answers, scores, sideOf } from '../domain/model.ts';
-import type { Answer, Choice, Dot, Score, Side } from '../domain/model.ts';
+import { choices, scores, sideOf } from '../domain/model.ts';
+import type { Choice, Dot, Score, Side } from '../domain/model.ts';
 
 export interface Point { x: number; y: number }
 interface PlacedDot extends Point { person: Dot; r: number }
@@ -133,21 +133,13 @@ export function answerBand(side: Side) {
   return arcBand(...answerAngles[side]);
 }
 
-function otherSlots(radius: number) {
-  const points: Point[] = [];
-  const pitch = radius * 2 + Math.min(2, radius * 0.45);
-  for (let y = 147 + radius; y <= 188 - radius; y += pitch) {
-    for (let x = 150 + radius; x <= 250 - radius; x += pitch) points.push({ x, y });
-  }
-  return points;
-}
-
 export function answerLayout(
   dots: readonly Dot[], questionId: string, choice: Choice, markerScore: Score, radiusLimit = 6.7,
 ) {
-  const groups = Object.fromEntries(answers.map(answer => [
-    answer, dots.filter(dot => dot.answers[questionId] === answer),
-  ])) as Record<Answer, Dot[]>;
+  const groups = {
+    a: dots.filter(dot => dot.answers[questionId] === 'a'),
+    b: dots.filter(dot => dot.answers[questionId] === 'b'),
+  };
   const marker = readerOnArc(markerScore).marker;
   const chosenSide = sideOf(markerScore);
   const otherSide = chosenSide === 'left' ? 'right' : 'left';
@@ -160,19 +152,18 @@ export function answerLayout(
   const makeSlots = () => ({
     a: slotsInBand('a'),
     b: slotsInBand('b'),
-    other: otherSlots(Math.min(r, 3.2)),
   });
   let slots = makeSlots();
-  while (answers.some(answer => slots[answer].length < groups[answer].length)) {
+  while (choices.some(answer => slots[answer].length < groups[answer].length)) {
     r *= 0.88;
     slots = makeSlots();
   }
-  const positioned: PlacedDot[] = answers.flatMap(answer => spread(slots[answer], groups[answer].length)
-    .map((point, i) => ({ ...point, r: answer === 'other' ? Math.min(r, 3.2) : r, person: groups[answer][i] })));
+  const positioned: PlacedDot[] = choices.flatMap(answer => spread(slots[answer], groups[answer].length)
+    .map((point, i) => ({ ...point, r, person: groups[answer][i] })));
   return {
     marker,
     sides,
     dots: positioned,
-    counts: { a: groups.a.length, b: groups.b.length, other: groups.other.length },
+    counts: { a: groups.a.length, b: groups.b.length },
   };
 }

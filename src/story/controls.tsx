@@ -120,8 +120,8 @@ export function ResultControls({ question, choice, score, alignment, final, onCo
         return <div key={side} className={`result-row ${side}`}>
           <strong>{share.percent === null ? '—' : `${sharePercent.format(share.percent)}%`}</strong>
           <div><b>of people on the {side} chose this answer</b>
-            <small>{share.total ? `${integer.format(share.count)} of ${integer.format(share.total)} responses · unweighted count`
-              : 'No eligible respondents in this group'}</small>
+            <small>{share.total ? `${integer.format(share.count)} of ${integer.format(share.total)} included responses · unweighted count`
+              : 'No responses matched either option'}</small>
           </div>
           <div className="result-bar" aria-hidden="true"><span style={{ '--share': `${share.percent ?? 0}%` } as React.CSSProperties} /></div>
         </div>;
