@@ -2,7 +2,7 @@ import { useEffect, useMemo, useReducer, useRef } from 'react';
 import type { ReactNode, Ref } from 'react';
 import type { Score, StoryData } from '../domain/model.ts';
 import { ArcChart } from '../visualization/ArcChart.tsx';
-import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, integer, placement, sharePercent } from './controls.tsx';
+import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, integer, sharePercent } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { matchesHighlights } from './highlights.ts';
@@ -72,7 +72,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       <Continue disabled={score === null} onClick={() => navigate({ type: 'confirm' })}>This is me</Continue>
     </>;
   } else if (state.step === 'among') {
-    heading = <>You are at {state.score}, {placement(state.score).toLowerCase()}</>;
+    heading = 'Get to know your sector';
     cards = <>
       <Fact value={shown} caption={matches ? 'Matches in your sector' : 'Shown at your mark'} />
       <Fact value={matches?.length ?? data.dots.length} caption={matches ? 'Matches on the arc' : 'People shown on the arc'} />
