@@ -52,7 +52,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   }
 
   function place(value: Score) {
+    if (value === score) return;
     dispatch({ type: 'place', score: value });
+    navigator.vibrate?.(10);
   }
 
   if (state.step === 'conclusion') {
