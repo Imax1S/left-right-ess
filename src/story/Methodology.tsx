@@ -26,6 +26,8 @@ export function Methodology({ data }: { data: StoryData }) {
       <p>Profile filters use the categories recorded by ESS for gender, age bands of 15–29, 30–44, 45–59 and 60+,
         self-rated religiosity (0–3, 4–6 and 7–10) and education grouped by ES-ISCED levels 1–2, 3–5 and 6–7.
         Only recorded responses within a selected category match that filter.</p>
+      <p>Orange dots mark respondents who chose the same starting position as you.
+        They keep their colour as they move into the two answer groups.</p>
       <p>Your marker moves to the other side when your answer was more common there at the displayed precision.
         Each question starts from the position you chose.</p>
       <p>For each question, percentages compare respondents whose answers fall into one of the two groups. We exclude neutral, missing and other responses.

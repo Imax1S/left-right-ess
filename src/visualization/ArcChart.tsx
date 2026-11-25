@@ -125,10 +125,11 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
             const answerPoint = answerPositions?.get(person.id);
             const point = answerPoint ?? arcPositions.get(person.id)!;
             const side = sideOf(person.score);
+            const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
             const opacity = groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
-              : score === null ? 0.66 : person.score === score ? 1 : 0.5;
+              : score === null ? 0.66 : sameScore ? 1 : 0.5;
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
               opacity,
@@ -136,7 +137,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
             };
             const diameter = Math.SQRT2 * point.r;
             return <g key={person.id} className={`respondent ${side}`} style={style}
-              data-highlighted={highlighted ? 'true' : undefined}>
+              data-highlighted={highlighted ? 'true' : undefined} data-same-score={sameScore ? 'true' : undefined}>
               {side === 'left'
                 ? <circle r={point.r} />
                 : <rect x={-diameter / 2} y={-diameter / 2} width={diameter} height={diameter} rx="1.6" transform="rotate(45)" />}
@@ -168,6 +169,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
           ))}
         </div>}
       </div>
+      {!canPlace && score !== null && <figcaption className="arc-legend">People at your starting mark ({score})</figcaption>}
     </figure>
   );
 }
