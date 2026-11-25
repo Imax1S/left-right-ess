@@ -1,4 +1,4 @@
-import { scores, sideOf } from '../domain/model.ts';
+import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from './answerAlignment.ts';
 
@@ -74,34 +74,47 @@ export function QuestionControls({ question, onAnswer }: {
   </div>;
 }
 
-export function ResultControls({ question, choice, score, alignment, final, onContinue }: {
-  question: StoryQuestion; choice: Choice; score: Score; alignment: AnswerAlignment;
+export function ResultControls({ question, choice, alignment, final, onContinue }: {
+  question: StoryQuestion; choice: Choice; alignment: AnswerAlignment;
   final: boolean; onContinue: () => void;
 }) {
-  const startSide = sideOf(score);
-  const { gap } = alignment;
-  const note = alignment.side === null
-    ? 'Both sides chose this answer about as often.'
-    : alignment.side === startSide
-      ? `This answer was more common on the ${startSide}, where you placed yourself.`
-      : `You placed yourself on the ${startSide}. This answer was more common on the ${alignment.side}.`;
+  const { gap, side: moreCommonOn } = alignment;
+  const note = gap === null
+    ? 'A comparison needs responses from both sides.'
+    : moreCommonOn === null
+      ? 'Both sides chose this answer about as often.'
+      : `More common on the ${moreCommonOn} by ${sharePercent.format(gap)} percentage points.`;
+
   return <>
-    <div className="result-rows">
-      {(['left', 'right'] as const).map(side => {
-        const share = question.stats[side][choice];
-        return <div key={side} className={`result-row ${side}`}>
-          <strong>{share.percent === null ? '—' : `${sharePercent.format(share.percent)}%`}</strong>
-          <div><b>of people on the {side} chose this answer</b>
-            <small>{share.total ? `${integer.format(share.count)} of ${integer.format(share.total)} included responses · unweighted count`
-              : 'No responses matched either option'}</small>
-          </div>
-          <div className="result-bar" aria-hidden="true"><span style={{ '--share': `${share.percent ?? 0}%` } as React.CSSProperties} /></div>
-        </div>;
-      })}
-    </div>
-    {gap !== null && <p className="result-note">
-      {note}{gap > 0 && ` The groups were ${sharePercent.format(gap)} percentage points apart.`}
-    </p>}
+    <section className="result-comparison" aria-labelledby="result-comparison-heading">
+      <h2 id="result-comparison-heading">Who chose the same answer?</h2>
+      <div className="result-rows">
+        {sides.map(side => {
+          const { percent } = question.stats[side][choice];
+          return <div key={side} className={'result-row ' + side}>
+            <span className="result-side">{side === 'left' ? 'Left' : 'Right'}</span>
+            <strong>{percent === null ? '—' : sharePercent.format(percent) + '%'}</strong>
+            <div className="result-bar" aria-hidden="true">
+              <span style={{ '--share': (percent ?? 0) + '%' } as React.CSSProperties} />
+            </div>
+          </div>;
+        })}
+      </div>
+      <p className="result-note">{note}</p>
+      <details className="result-details">
+        <summary>Response counts</summary>
+        <dl>
+          {sides.map(side => {
+            const { count, total } = question.stats[side][choice];
+            return <div key={side}>
+              <dt>{side === 'left' ? 'Left' : 'Right'}</dt>
+              <dd>{total ? integer.format(count) + ' of ' + integer.format(total) : 'No included responses'}</dd>
+            </div>;
+          })}
+        </dl>
+        <p>Counts are unweighted. Percentages use survey weights.</p>
+      </details>
+    </section>
     <Continue onClick={onContinue}>{final ? 'See the takeaway' : 'Next question'}</Continue>
   </>;
 }

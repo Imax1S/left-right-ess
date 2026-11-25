@@ -86,10 +86,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
     const answer = result.question.options[result.choice === 'a' ? 0 : 1];
-    heading = <>{result.question.topic}: {answer === 'Agree' || answer === 'Disagree'
-      ? `you ${answer.toLowerCase()}`
-      : `you chose “${answer.toLowerCase()}”`}</>;
-    controls = <ResultControls question={result.question} choice={result.choice} score={state.score} alignment={result.alignment} final={final}
+    heading = answer === 'Agree' || answer === 'Disagree'
+      ? 'You ' + answer.toLowerCase()
+      : 'You chose “' + answer + '”';
+    controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment} final={final}
       onContinue={() => navigate({ type: 'next' })} />;
   }
 
