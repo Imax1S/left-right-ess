@@ -1,27 +1,7 @@
 import { answers, sideOf, sides } from './model.ts';
 import type { Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
 
-function priority(person: Respondent) {
-  // Keep the ESS11 story's deterministic, weighted sampling order.
-  let hash = 2166136261;
-  for (const char of person.id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
-  hash = Math.imul(hash ^ (hash >>> 16), 0x7feb352d);
-  hash = Math.imul(hash ^ (hash >>> 15), 0x846ca68b);
-  const uniform = (((hash ^ (hash >>> 16)) >>> 0) + 1) / 4294967297;
-  return -Math.log(uniform) / person.weight;
-}
-
-function weightedSample(people: Respondent[], count: number) {
-  return people.map(person => ({ person, priority: priority(person) }))
-    .sort((a, b) => a.priority - b.priority || a.person.id.localeCompare(b.person.id))
-    .slice(0, count)
-    .map(({ person }, index) => ({
-      id: String(index + 1),
-      score: person.score,
-      country: person.country,
-      answers: person.answers,
-    }));
-}
+import { sampleRespondents } from './sample.ts';
 
 function summarize(people: Respondent[], id: string): StoryQuestion['stats'] {
   const empty = () => ({ a: { count: 0, weight: 0 }, b: { count: 0, weight: 0 }, other: { count: 0, weight: 0 } });
@@ -66,6 +46,6 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
     countries,
     questions: questions.map(question => ({ ...question, stats: summarize(people, question.id) })),
     eligibleCount: people.length,
-    dots: weightedSample(people, config.dotCount),
+    dots: sampleRespondents(people, countries, config.dotCount),
   };
 }

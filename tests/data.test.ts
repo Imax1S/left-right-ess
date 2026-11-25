@@ -12,6 +12,8 @@ test('uses real weighted side denominators, and keeps other responses and sample
   assert.equal(data.eligibleCount, 22123);
   assert.equal(data.dots.length, 100);
   assert.equal(new Set(data.dots.map(dot => dot.id)).size, 100);
+  assert.deepEqual([...new Set(data.dots.map(dot => dot.country))].sort(), [...source.countryCodes].sort());
+  assert.ok(data.dots.filter(dot => dot.country === 'DE').length > data.dots.filter(dot => dot.country === 'EE').length);
   assert.equal(data.questions[0].stats.left.a.percent?.toFixed(1), '78.3');
   assert.equal(data.questions[0].stats.right.a.percent?.toFixed(1), '61.2');
   assert.equal(data.questions[0].stats.left.other.percent?.toFixed(1), '14.5');
@@ -40,4 +42,11 @@ test('rejects unknown countries and questions during generation', async () => {
   await assert.rejects(prepareStory(source, {
     questions: ['unavailable'], countries: ['EE'], dotCount: 10,
   }), /Unknown question/);
+});
+
+test('rejects a dot count too small to show every configured country', async () => {
+  const source = await ess11Source();
+  await assert.rejects(prepareStory(source, {
+    questions: ['inequality'], countries: ['EE', 'FI'], dotCount: 1,
+  }), /dotCount must be at least 2/);
 });

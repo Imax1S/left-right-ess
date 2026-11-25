@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { sideOf } from '../domain/model.ts';
-import type { StoryData } from '../domain/model.ts';
+import type { Score, StoryData } from '../domain/model.ts';
 import { ArcChart } from '../visualization/ArcChart.tsx';
 import { Arrow, CountryControls, QuestionControls, ResultControls, ScaleControls, integer, placement } from './controls.tsx';
 import { createSessionReducer, initialSession } from './session.ts';
@@ -32,12 +32,16 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   useEffect(() => {
     if (showMethod || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: 'instant' });
+    if (step !== 'result') window.scrollTo({ top: 0, behavior: 'instant' });
   }, [step, index, showMethod]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
     focusOnChange.current = true;
     dispatch(action);
+  }
+
+  function place(value: Score) {
+    dispatch({ type: 'place', score: value });
   }
 
   let heading: ReactNode;
@@ -49,7 +53,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       <Fact value={integer.format(data.source.records)} caption="People interviewed" />
       <Fact value={data.source.countries} caption={`Countries, ${data.source.years}`} />
     </>;
-    controls = <ScaleControls score={score} shown={shown} onPlace={value => dispatch({ type: 'place', score: value })}
+    controls = <ScaleControls score={score} shown={shown} onPlace={place}
       onConfirm={() => navigate({ type: 'confirm' })} />;
   } else if (state.step === 'among') {
     heading = <>You are at {score}, {placement(score).toLowerCase()}</>;
@@ -62,10 +66,6 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       onCountry={code => dispatch({ type: 'country', code })} onStart={() => navigate({ type: 'start' })} />;
   } else if (state.step === 'question' && question) {
     heading = question.prompt;
-    cards = <>
-      <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
-      <Fact value={question.topic} caption="Topic" />
-    </>;
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
   } else if (result) {
     const final = index === data.questions.length - 1;
@@ -77,12 +77,19 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       onContinue={() => navigate({ type: final ? 'restart' : 'next' })} />;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}`}>
+  if (question) {
+    cards = <>
+      <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
+      <Fact value={question.topic} caption="Topic" />
+    </>;
+  }
+
+  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
         <div className="header-controls">
-          {(step === 'among' || step === 'question') && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
+          {(step === 'among' || question) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
             <Arrow back /> Back
           </button>}
           <span>{index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>
@@ -91,7 +98,8 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
       <div className="story-visual">
         {cards && <div className="facts">{cards}</div>}
-        <ArcChart dots={data.dots} score={score} country={country} result={result} />
+        <ArcChart dots={data.dots} score={score} country={country} comparison={question !== null} result={result}
+          onPlace={step === 'scale' ? place : undefined} />
       </div>
       <div className="story-controls">{controls}</div>
     </section>

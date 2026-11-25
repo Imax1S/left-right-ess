@@ -19,7 +19,9 @@ export function Methodology({ data }: { data: StoryData }) {
     </section>
     <section>
       <h2>What the dots and percentages show</h2>
-      <p>Each of the {integer.format(data.dots.length)} dots is a distinct survey respondent selected with a deterministic, weighted sample.
+      <p>Each of the {integer.format(data.dots.length)} dots is a distinct survey respondent. Every selected country has at least one dot.
+        We allocate the remaining places to get as close as possible to each country’s share of the survey weight.
+        Within each country, we select respondents deterministically using their survey weights.
         The same people move to their recorded answer group on each question. A country choice highlights points for the placement step.</p>
       <p>Percentages use the full eligible pool. Each answer’s share is its sum of weights divided by the total weight within the same political group.
         The count beside each percentage is an unweighted count. Midpoints, missing and other responses stay in the denominator.

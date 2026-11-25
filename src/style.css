@@ -105,7 +105,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   border-radius: 0.12em;
   color: inherit;
 }
-.step-question .story-grid { grid-template-areas: 'header' 'visual' 'title' 'controls'; }
+.step-comparison .story-grid { grid-template-areas: 'header' 'visual' 'title' 'controls'; }
 .step-result .story-heading { font-size: clamp(22px, 5vw, 37px); }
 
 .story-visual { grid-area: visual; min-width: 0; display: grid; align-content: start; gap: 22px; }
@@ -130,7 +130,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   letter-spacing: -0.045em;
   line-height: 1.05;
 }
-.step-question .fact + .fact strong { font-size: clamp(15px, 4.15vw, 26px); }
+.step-comparison .fact + .fact strong { font-size: clamp(15px, 4.15vw, 26px); }
 .fact span { font-size: clamp(10px, 2.35vw, 13px); font-weight: 850; line-height: 1.15; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .arc-figure { width: 100%; min-width: 0; }
@@ -149,9 +149,20 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .chart-layer.is-hidden { opacity: 0; }
 .respondent { fill: currentColor; transition: opacity 230ms ease, transform 620ms cubic-bezier(0.5, 0.08, 0.26, 1); }
 .is-result .respondent { transition-duration: 200ms, 880ms; transition-delay: 0ms, var(--delay); }
-.answer-disc { fill: #e8dcc5; }
-.answer-disc.selected { fill: #fceab1; stroke: var(--ink); stroke-width: 2.4; }
+.answer-band { fill: #e8dcc5; }
+.answer-band.selected { fill: #fceab1; stroke: var(--ink); stroke-width: 2.4; stroke-linejoin: round; }
 .reader-marker { fill: var(--yellow); stroke: var(--ink); stroke-width: 2.8; transition: transform 460ms cubic-bezier(0.33, 0, 0.22, 1); }
+.is-interactive .reader-marker { transition-duration: 120ms; }
+.arc-tap-area { fill: transparent; cursor: pointer; }
+.arc-drag-handle {
+  position: absolute;
+  height: 44px;
+  margin-top: -22px;
+  transform-origin: left center;
+  cursor: grab;
+  touch-action: none;
+}
+.arc-drag-handle:active { cursor: grabbing; }
 .is-result .reader-marker { transition-duration: 760ms; }
 .reader-marker text {
   fill: var(--ink);
@@ -162,16 +173,16 @@ a { color: inherit; text-underline-offset: 0.2em; }
   text-anchor: middle;
   dominant-baseline: middle;
 }
-.cluster-caption { position: absolute; inset: 63% 0 auto; display: grid; grid-template-columns: 1fr 1fr; text-align: center; min-width: 0; gap: 6px; }
+.cluster-caption { position: absolute; inset: 76% 0 auto; display: grid; grid-template-columns: 1fr 1fr; text-align: center; min-width: 0; gap: 6px; }
 .cluster-caption div { display: grid; justify-items: center; gap: 2px; min-width: 0; }
-.cluster-caption span, .cluster-caption div small {
+.cluster-caption span {
   font-size: clamp(9px, 2.45vw, 12px);
   font-weight: 850;
   letter-spacing: 0.065em;
   text-transform: uppercase;
 }
-.cluster-caption strong { font: 820 clamp(20px, 6vw, 33px)/1 var(--display); letter-spacing: -0.07em; }
-.other-caption { color: var(--muted); font-size: 11px; text-align: center; margin-top: 5px; }
+.cluster-caption strong { font: 820 clamp(17px, 5vw, 31px)/1 var(--display); letter-spacing: -0.05em; }
+.other-caption { fill: var(--muted); font-size: 11px; font-weight: 820; text-anchor: middle; }
 
 .story-controls { grid-area: controls; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; align-content: start; }
 .survey-intro h2, .country-picker h2 {
@@ -212,6 +223,8 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .scale-slider::-moz-range-track { background: linear-gradient(to right, var(--left) 50%, var(--right) 50%); height: 13px; border-radius: 99px; }
 .scale-slider::-webkit-slider-thumb { appearance: none; height: var(--thumb); width: var(--thumb); margin-top: calc((13px - var(--thumb)) / 2); border: 2.5px solid var(--ink); border-radius: 50%; background: var(--yellow); }
 .scale-slider::-moz-range-thumb { height: var(--thumb); width: var(--thumb); border: 2.5px solid var(--ink); border-radius: 50%; background: var(--yellow); }
+.scale-slider[data-side="right"]::-webkit-slider-thumb { border-radius: 5px; transform: rotate(45deg) scale(0.82); }
+.scale-slider[data-side="right"]::-moz-range-thumb { border-radius: 5px; transform: rotate(45deg) scale(0.82); }
 .scale-ticks { display: flex; justify-content: space-between; padding-inline: 2px; }
 .scale-ticks button { width: 29px; height: 31px; padding: 0; border: 0; border-radius: 50%; font-weight: 850; font-size: 12px; }
 .scale-ticks button[aria-pressed="true"] { background: var(--ink); color: var(--cream); }
@@ -313,7 +326,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
 }
 @media (min-width: 800px) {
   .story-page { max-width: 1450px; padding-inline: clamp(28px, 5vw, 85px); }
-  .story-grid, .step-question .story-grid {
+  .story-grid {
     min-height: calc(100svh - 54px);
     align-content: center;
     grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
@@ -327,6 +340,14 @@ a { color: inherit; text-underline-offset: 0.2em; }
     gap: clamp(13px, 2vh, 24px) clamp(26px, 4.8vw, 84px);
     padding-top: 24px;
   }
+  .step-comparison .story-grid {
+    align-content: start;
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas: 'visual header' 'visual title' 'visual controls' 'visual .';
+    padding-top: clamp(30px, 13svh, 117px);
+  }
+  .step-comparison .story-visual { align-self: start; }
+  .step-comparison .story-header { padding-top: clamp(16px, 12svh, 108px); }
   .story-visual { align-self: center; gap: clamp(32px, 5.5vw, 80px); }
   .story-header { font-size: clamp(11px, 1vw, 15px); }
   .story-heading { font-size: clamp(28px, 3.25vw, 53px); text-wrap: pretty; }
@@ -334,7 +355,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   .fact { border-width: 3px; border-radius: clamp(15px, 2vw, 28px); box-shadow: 6px 8px var(--ink); padding: clamp(12px, 1.9vw, 28px); }
   .fact strong { font-size: clamp(28px, 3.4vw, 56px); }
   .fact span { font-size: clamp(12px, 1.3vw, 18px); }
-  .step-question .fact + .fact strong { font-size: clamp(19px, 2.65vw, 40px); }
+  .step-comparison .fact + .fact strong { font-size: clamp(19px, 2.65vw, 40px); }
   .fact + .fact { margin-top: min(1.6vw, 20px); }
   .answer-options { gap: 13px; }
   .answer-options button { min-height: clamp(100px, 12vw, 166px); font-size: clamp(13px, 1.6vw, 23px); }

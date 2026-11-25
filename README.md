@@ -20,7 +20,7 @@ Edit [story.config.ts](story.config.ts). Vite rebuilds the prepared data when th
 
 - `questions` lists question IDs in display order. The [ESS11 catalogue](src/ess/questions.ts) defines the prompt, button labels and grouping for each supported question.
 - `countries` lists the country codes in the comparison. These also determine which countries the reader can highlight on the placement screen.
-- `dotCount` sets the visible sample size up to the number of eligible respondents. The chart uses the same respondents on each question. A country can have no respondents in this smaller sample.
+- `dotCount` must be at least the number of selected countries. Each eligible country gets at least one dot, and the rest of the places follow their weighted proportions as closely as possible. The chart uses the same respondents on each question.
 
 ## Code
 

@@ -37,7 +37,7 @@ export function ScaleControls({ score, shown, onPlace, onConfirm }: {
         <strong className={sideOf(score)}>{score}</strong>
         <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>
       </div>
-      <input className="scale-slider" aria-label="Your place on the left–right scale"
+      <input className="scale-slider" data-side={sideOf(score)} aria-label="Your place on the left–right scale"
         aria-valuetext={`${score}, ${placement(score)}`} type="range" min="0" max={scores.length - 1}
         step="1" value={scores.indexOf(score)} onChange={event => onPlace(scores[event.target.valueAsNumber])} />
       <div className="scale-ticks" aria-label="Choose a position">
