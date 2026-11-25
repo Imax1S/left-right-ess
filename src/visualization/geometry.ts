@@ -1,14 +1,16 @@
-import { answers, scores } from '../domain/model.ts';
-import type { Answer, Choice, Dot, Score } from '../domain/model.ts';
+import { answers, scores, sideOf } from '../domain/model.ts';
+import type { Answer, Choice, Dot, Score, Side } from '../domain/model.ts';
 
 export interface Point { x: number; y: number }
 interface PlacedDot extends Point { person: Dot; r: number }
 
-export const viewBox = { width: 400, height: 220 };
+export const viewBox = { width: 400, height: 242 };
 export const comparisonHeight = 256;
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
+const readerClearance = 21;
+export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
 
 function polar(angle: number, radius: number): Point {
@@ -51,13 +53,14 @@ export function scoreSectorOutline(score: Score): Point[] {
 
 export function readerOnArc(score: Score) {
   const angle = (scores.indexOf(score) + 0.5) * sectorAngle;
-  return { marker: polar(angle, 47), start: origin, end: polar(angle, inner) };
+  return { marker: polar(angle, 132), start: origin, end: polar(angle, inner) };
 }
 
-export function scoreFromArcPoint({ x, y }: Point): Score | null {
+export function scoreFromArcPoint({ x, y }: Point, entering = false): Score | null {
   const dx = origin.x - x;
   const dy = origin.y - y;
-  if (Math.hypot(dx, dy) < 12) return null;
+  const radius = Math.hypot(dx, dy);
+  if (radius < 12 || (entering && (dy < 0 || radius < inner || radius > outer))) return null;
   const angle = Math.atan2(Math.max(0, dy), dx);
   return scores[Math.min(scores.length - 1, Math.floor(angle / sectorAngle))];
 }
@@ -89,27 +92,45 @@ function bandSlots(start: number, end: number, r: number, count: number) {
   return slots;
 }
 
-export function arcLayout(dots: readonly Dot[]) {
+function clearOfReader(point: Point, marker: Point, radius: number) {
+  return Math.hypot(point.x - marker.x, point.y - marker.y) >= readerClearance + radius;
+}
+
+export function arcLayout(dots: readonly Dot[], selected: Score | null = null) {
   const groups = scores.map(score => dots.filter(dot => dot.score === score));
   let r = 6.7;
-  let slots = groups.map((group, i) => bandSlots(i * sectorAngle, (i + 1) * sectorAngle, r, group.length));
+  const makeSlots = () => groups.map((group, i) => bandSlots(...scoreAngles(scores[i]), r, group.length));
+  let slots = makeSlots();
   while (slots.some((points, i) => points.length < groups[i].length)) {
     r *= 0.88;
-    slots = groups.map((group, i) => bandSlots(i * sectorAngle, (i + 1) * sectorAngle, r, group.length));
+    slots = makeSlots();
   }
-  return { radius: r, dots: groups.flatMap((group, i) => spread(slots[i], group.length).map((point, j) => ({
-    ...point, r, person: group[j],
-  }))) };
+
+  return { radius: r, dots: groups.flatMap((group, i) => {
+    const score = scores[i];
+    let radius = r;
+    let points = slots[i];
+    if (selected === score) {
+      const { marker } = readerOnArc(score);
+      points = points.filter(point => clearOfReader(point, marker, radius));
+      while (points.length < group.length) {
+        radius *= 0.88;
+        points = bandSlots(...scoreAngles(score), radius, group.length)
+          .filter(point => clearOfReader(point, marker, radius));
+      }
+    }
+    return spread(points, group.length).map((point, j) => ({ ...point, r: radius, person: group[j] }));
+  }) };
 }
 
 const middleGap = 0.035;
-const answerAngles: Record<Choice, [number, number]> = {
-  a: [0, Math.PI / 2 - middleGap],
-  b: [Math.PI / 2 + middleGap, Math.PI],
+const answerAngles: Record<Side, [number, number]> = {
+  left: [0, Math.PI / 2 - middleGap],
+  right: [Math.PI / 2 + middleGap, Math.PI],
 };
 
-export function answerBand(choice: Choice) {
-  return arcBand(...answerAngles[choice]);
+export function answerBand(side: Side) {
+  return arcBand(...answerAngles[side]);
 }
 
 function otherSlots(radius: number) {
@@ -121,14 +142,21 @@ function otherSlots(radius: number) {
   return points;
 }
 
-export function answerLayout(dots: readonly Dot[], questionId: string, choice: Choice, radiusLimit = 6.7) {
+export function answerLayout(
+  dots: readonly Dot[], questionId: string, choice: Choice, markerScore: Score, radiusLimit = 6.7,
+) {
   const groups = Object.fromEntries(answers.map(answer => [
     answer, dots.filter(dot => dot.answers[questionId] === answer),
   ])) as Record<Answer, Dot[]>;
-  const marker = polar(choice === 'a' ? Math.PI / 4 : 3 * Math.PI / 4, 131);
+  const marker = readerOnArc(markerScore).marker;
+  const chosenSide = sideOf(markerScore);
+  const otherSide = chosenSide === 'left' ? 'right' : 'left';
+  const sides: Record<Choice, Side> = choice === 'a'
+    ? { a: chosenSide, b: otherSide }
+    : { a: otherSide, b: chosenSide };
   let r = radiusLimit;
-  const slotsInBand = (option: Choice) => bandSlots(...answerAngles[option], r, groups[option].length)
-    .filter(point => option !== choice || Math.hypot(point.x - marker.x, point.y - marker.y) >= 22 + r);
+  const slotsInBand = (option: Choice) => bandSlots(...answerAngles[sides[option]], r, groups[option].length)
+    .filter(point => option !== choice || clearOfReader(point, marker, r));
   const makeSlots = () => ({
     a: slotsInBand('a'),
     b: slotsInBand('b'),
@@ -143,6 +171,7 @@ export function answerLayout(dots: readonly Dot[], questionId: string, choice: C
     .map((point, i) => ({ ...point, r: answer === 'other' ? Math.min(r, 3.2) : r, person: groups[answer][i] })));
   return {
     marker,
+    sides,
     dots: positioned,
     counts: { a: groups.a.length, b: groups.b.length, other: groups.other.length },
   };

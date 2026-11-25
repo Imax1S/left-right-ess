@@ -1,18 +1,19 @@
 import { useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import { sideOf } from '../domain/model.ts';
+import { sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, StoryQuestion } from '../domain/model.ts';
+import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
   answerBand, answerLayout, arcBand, arcLayout, comparisonHeight,
-  readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, viewBox,
+  readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 
 interface Props {
   dots: Dot[];
-  score: Score;
+  score: Score | null;
   country: string | null;
   comparison: boolean;
-  result: { question: StoryQuestion; choice: Choice } | null;
+  result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
   onPlace?: (score: Score) => void;
 }
 
@@ -20,26 +21,38 @@ type MotionStyle = CSSProperties & { '--delay': string };
 
 export function ArcChart({ dots, score, country, comparison, result, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const arc = useMemo(() => arcLayout(dots), [dots]);
+  const arc = useMemo(() => arcLayout(dots, score), [dots, score]);
   const questionId = result?.question.id;
   const choice = result?.choice;
+  const destination = result?.alignment.score;
   const groups = useMemo(
-    () => questionId && choice ? answerLayout(dots, questionId, choice, arc.radius) : null,
-    [dots, questionId, choice, arc.radius],
+    () => questionId && choice && destination !== undefined
+      ? answerLayout(dots, questionId, choice, destination, arc.radius)
+      : null,
+    [dots, questionId, choice, destination, arc.radius],
   );
-  const pointers = readerOnArc(score);
-  const selected = groups?.marker ?? pointers.marker;
+  const pointers = score === null ? null : readerOnArc(score);
+  const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const leftLabel = result?.question.options[0] ?? '';
   const rightLabel = result?.question.options[1] ?? '';
   const positions = new Map((groups ?? arc).dots.map(dot => [dot.person.id, dot]));
   const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}`;
-  const pointerLine = `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
+  const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
+  const dragTargetStyle = pointers ? {
+    left: `${pointers.start.x / viewBox.width * 100}%`,
+    top: `${pointers.start.y / viewBox.height * 100}%`,
+    width: `${Math.hypot(pointers.end.x - pointers.start.x, pointers.end.y - pointers.start.y) / viewBox.width * 100}%`,
+    rotate: `${Math.atan2(pointers.end.y - pointers.start.y, pointers.end.x - pointers.start.x)}rad`,
+  } : {
+    left: `${unplacedMarker.x / viewBox.width * 100}%`,
+    top: `${unplacedMarker.y / viewBox.height * 100}%`,
+  };
 
   function placeAt(clientX: number, clientY: number) {
     const screen = svgRef.current?.getScreenCTM();
     if (!screen) return;
     const point = new DOMPoint(clientX, clientY).matrixTransform(screen.inverse());
-    const mark = scoreFromArcPoint(point);
+    const mark = scoreFromArcPoint(point, score === null);
     if (mark !== null && mark !== score) onPlace?.(mark);
   }
 
@@ -56,28 +69,29 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
     }
   }
 
-  const sectorOutline = onPlace && scoreSectorOutline(score)
+  const sectorOutline = onPlace && score !== null && scoreSectorOutline(score)
     .map(({ x, y }) => `${x / viewBox.width * 100}% ${y / viewBox.height * 100}%`)
     .join(', ');
 
   return (
     <figure className={figureClass} aria-label={groups
       ? `Shown respondents: ${groups.counts.a} ${leftLabel}, ${groups.counts.b} ${rightLabel}, ${groups.counts.other} other responses. Your answer: ${choice === 'a' ? leftLabel : rightLabel}.`
-      : `Political self-placement of ${dots.length} survey respondents. Your mark is ${score} out of 10.`}>
+      : `Political self-placement of ${dots.length} survey respondents. ${score === null
+        ? 'Choose a sector for your mark.' : `Your mark is ${score} out of 10.`}`}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups ? 'chart-layer is-hidden' : 'chart-layer'}>
             <path d={arcBand(0, Math.PI / 2)} fill="var(--left-pale)" />
             <path d={arcBand(Math.PI / 2, Math.PI)} fill="var(--right-pale)" />
-            <path className="score-band" d={scoreBand(score)} />
-            <path className="score-pointer" d={pointerLine} />
+            {score !== null && <path className="score-band" d={scoreBand(score)} />}
+            {pointerLine && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
             <text className="arc-end" x="332" y="211">10</text>
           </g>
           <g className={groups ? 'chart-layer' : 'chart-layer is-hidden'}>
-            {(['a', 'b'] as const).map(option => (
-              <path key={option} d={answerBand(option)}
-                className={choice === option ? 'answer-band selected' : 'answer-band'} />
+            {sides.map(side => (
+              <path key={side} d={answerBand(side)}
+                className={groups && choice && groups.sides[choice] === side ? 'answer-band selected' : 'answer-band'} />
             ))}
             {!!groups?.counts.other && <text className="other-caption" x="200" y="139">
               Other · {groups.counts.other}
@@ -88,7 +102,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
             const side = sideOf(person.score);
             const opacity = groups ? 1 : country
               ? person.country === country ? 1 : 0.27
-              : person.score === score ? 1 : 0.5;
+              : score === null ? 0.66 : person.score === score ? 1 : 0.5;
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
               opacity,
@@ -103,7 +117,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
             </g>;
           })}
           <g className="reader-marker" style={{ transform: `translate(${selected.x}px, ${selected.y}px)` }}>
-            {!groups && sideOf(score) === 'right'
+            {score === null || sideOf(score) === 'right'
               ? <rect x="-12" y="-12" width="24" height="24" rx="4" transform="rotate(45)" />
               : <circle r="17" />}
             <text y="1">You</text>
@@ -112,22 +126,16 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
             onClick={event => placeAt(event.clientX, event.clientY)} />}
         </svg>
         {onPlace && <>
-          <div className="arc-drag-target arc-drag-sector" aria-hidden="true"
+          {sectorOutline && <div className="arc-drag-target arc-drag-sector" aria-hidden="true"
             style={{ clipPath: `polygon(${sectorOutline})` }}
-            onPointerDown={startDrag} onPointerMove={moveDrag} />
-          <div className="arc-drag-target arc-drag-handle" aria-hidden="true"
-            style={{
-              left: `${pointers.start.x / viewBox.width * 100}%`,
-              top: `${pointers.start.y / viewBox.height * 100}%`,
-              width: `${Math.hypot(pointers.end.x - pointers.start.x, pointers.end.y - pointers.start.y) / viewBox.width * 100}%`,
-              rotate: `${Math.atan2(pointers.end.y - pointers.start.y, pointers.end.x - pointers.start.x)}rad`,
-            }}
-            onPointerDown={startDrag} onPointerMove={moveDrag} />
+            onPointerDown={startDrag} onPointerMove={moveDrag} />}
+          <div className={`arc-drag-target ${pointers ? 'arc-drag-handle' : 'arc-drag-start'}`} aria-hidden="true"
+            style={dragTargetStyle} onPointerDown={startDrag} onPointerMove={moveDrag} />
         </>}
         {groups && <div className="cluster-caption">
-          {(['a', 'b'] as const).map((option, index) => (
+          {(groups.sides.a === 'left' ? ['a', 'b'] as const : ['b', 'a'] as const).map(option => (
             <div key={option} className={choice === option ? 'selected' : undefined}>
-              <span>{index === 0 ? leftLabel : rightLabel}</span>
+              <span>{option === 'a' ? leftLabel : rightLabel}</span>
               <strong>{groups.counts[option]}</strong>
             </div>
           ))}

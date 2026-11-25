@@ -1,12 +1,11 @@
 import { isScore } from '../domain/model.ts';
 import type { Choice, Score } from '../domain/model.ts';
 
-export type Session = { score: Score } & (
-  | { step: 'scale' }
-  | { step: 'among'; country: string | null }
-  | { step: 'question'; index: number }
-  | { step: 'result'; index: number; option: Choice }
-);
+export type Session =
+  | { step: 'scale'; score: Score | null }
+  | { step: 'among'; score: Score; country: string | null }
+  | { step: 'question'; score: Score; index: number }
+  | { step: 'result'; score: Score; index: number; option: Choice };
 
 export type StoryAction =
   | { type: 'place'; score: number }
@@ -14,16 +13,16 @@ export type StoryAction =
   | { type: 'answer'; option: Choice }
   | { type: 'confirm' | 'start' | 'back' | 'next' | 'restart' };
 
-export const initialSession: Session = { step: 'scale', score: 3 };
+export const initialSession: Session = { step: 'scale', score: null };
 
 export function createSessionReducer(questions: readonly string[], countries: readonly string[]) {
   const countryCodes = new Set(countries);
   return (state: Session, action: StoryAction): Session => {
-    const { score } = state;
-    switch (state.step) {
+    const { step, score } = state;
+    switch (step) {
       case 'scale':
         if (action.type === 'place' && isScore(action.score)) return { step: 'scale', score: action.score };
-        if (action.type === 'confirm') return { step: 'among', score, country: null };
+        if (action.type === 'confirm' && score !== null) return { step: 'among', score, country: null };
         break;
       case 'among':
         if (action.type === 'country' && countryCodes.has(action.code)) {

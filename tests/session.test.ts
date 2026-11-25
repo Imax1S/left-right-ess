@@ -28,6 +28,14 @@ test('question count controls advancement and restart clears the session', () =>
 
 test('centre is unavailable and out-of-scope country is rejected', () => {
   assert.equal(reduce(initialSession, { type: 'place', score: 5 }), initialSession);
-  const among = reduce(initialSession, { type: 'confirm' });
+  const placed = reduce(initialSession, { type: 'place', score: 3 });
+  const among = reduce(placed, { type: 'confirm' });
   assert.equal(reduce(among, { type: 'country', code: 'US' }), among);
+});
+
+test('starts with the reader outside the arc and requires an explicit position', () => {
+  assert.deepEqual(initialSession, { step: 'scale', score: null });
+  assert.equal(reduce(initialSession, { type: 'confirm' }), initialSession);
+  const placed = reduce(initialSession, { type: 'place', score: 7 });
+  assert.deepEqual(reduce(placed, { type: 'confirm' }), { step: 'among', score: 7, country: null });
 });

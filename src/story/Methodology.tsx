@@ -23,6 +23,8 @@ export function Methodology({ data }: { data: StoryData }) {
         We allocate the remaining places to get as close as possible to each country’s share of the survey weight.
         Within each country, we select respondents deterministically using their survey weights.
         The same people move to their recorded answer group on each question. A country choice highlights points for the placement step.</p>
+      <p>Your marker moves to the other side when your answer was more common there at the displayed precision.
+        Each question starts from the position you chose.</p>
       <p>Percentages use the full eligible pool. Each answer’s share is its sum of weights divided by the total weight within the same political group.
         The count beside each percentage is an unweighted count. Midpoints, missing and other responses stay in the denominator.
         We combine the ESS post-stratification and population weights (<code>pspwght × pweight</code>) for the pooled comparison.</p>

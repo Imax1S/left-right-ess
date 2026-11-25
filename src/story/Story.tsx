@@ -4,6 +4,7 @@ import { sideOf } from '../domain/model.ts';
 import type { Score, StoryData } from '../domain/model.ts';
 import { ArcChart } from '../visualization/ArcChart.tsx';
 import { Arrow, CountryControls, QuestionControls, ResultControls, ScaleControls, integer, placement } from './controls.tsx';
+import { answerAlignment } from './answerAlignment.ts';
 import { createSessionReducer, initialSession } from './session.ts';
 
 export function Wordmark() {
@@ -25,7 +26,11 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const country = state.step === 'among' ? state.country : null;
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
-  const result = state.step === 'result' && question ? { question, choice: state.option } : null;
+  const result = state.step === 'result' && question ? {
+    question,
+    choice: state.option,
+    alignment: answerAlignment(question.stats, state.option, state.score),
+  } : null;
   const shown = data.dots.filter(dot => dot.score === score).length;
   const countryCount = country ? data.dots.filter(dot => dot.country === country).length : 0;
 
@@ -56,7 +61,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = <ScaleControls score={score} shown={shown} onPlace={place}
       onConfirm={() => navigate({ type: 'confirm' })} />;
   } else if (state.step === 'among') {
-    heading = <>You are at {score}, {placement(score).toLowerCase()}</>;
+    heading = <>You are at {state.score}, {placement(state.score).toLowerCase()}</>;
     cards = <>
       <Fact value={shown} caption="Shown at your mark" />
       <Fact value={country ? countryCount : data.dots.length}
@@ -67,13 +72,13 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (state.step === 'question' && question) {
     heading = question.prompt;
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
-  } else if (result) {
+  } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
     const answer = result.question.options[result.choice === 'a' ? 0 : 1];
     heading = <>{result.question.topic}: {answer === 'Agree' || answer === 'Disagree'
       ? `you ${answer.toLowerCase()}`
       : `you chose “${answer.toLowerCase()}”`}</>;
-    controls = <ResultControls question={result.question} choice={result.choice} score={score} final={final}
+    controls = <ResultControls question={result.question} choice={result.choice} score={state.score} alignment={result.alignment} final={final}
       onContinue={() => navigate({ type: final ? 'restart' : 'next' })} />;
   }
 

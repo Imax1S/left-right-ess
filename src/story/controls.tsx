@@ -1,5 +1,6 @@
 import { scores, sideOf } from '../domain/model.ts';
 import type { Choice, Country, Dot, Score, StoryQuestion } from '../domain/model.ts';
+import type { AnswerAlignment } from './answerAlignment.ts';
 
 export const integer = new Intl.NumberFormat('en-GB');
 export const sharePercent = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
@@ -16,12 +17,14 @@ export function Arrow({ back = false }: { back?: boolean }) {
   </svg>;
 }
 
-export function Continue({ children, onClick }: { children: string; onClick: () => void }) {
-  return <button className="continue" onClick={onClick}>{children}<Arrow /></button>;
+export function Continue({ children, onClick, disabled = false }: {
+  children: string; onClick: () => void; disabled?: boolean;
+}) {
+  return <button className="continue" disabled={disabled} onClick={onClick}>{children}<Arrow /></button>;
 }
 
 export function ScaleControls({ score, shown, onPlace, onConfirm }: {
-  score: Score; shown: number; onPlace: (score: Score) => void; onConfirm: () => void;
+  score: Score | null; shown: number; onPlace: (score: Score) => void; onConfirm: () => void;
 }) {
   return <>
     <div className="survey-intro">
@@ -34,19 +37,27 @@ export function ScaleControls({ score, shown, onPlace, onConfirm }: {
     </div>
     <div className="scale-controls">
       <div className="scale-readout">
-        <strong className={sideOf(score)}>{score}</strong>
-        <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>
+        {score === null
+          ? <div><b>Choose your position</b><p>Drag your marker, tap a sector or use the scale.</p></div>
+          : <>
+            <strong className={sideOf(score)}>{score}</strong>
+            <div><b>{placement(score)}</b><p>{shown} of the people shown share this mark</p></div>
+          </>}
       </div>
-      <input className="scale-slider" data-side={sideOf(score)} aria-label="Your place on the left–right scale"
-        aria-valuetext={`${score}, ${placement(score)}`} type="range" min="0" max={scores.length - 1}
-        step="1" value={scores.indexOf(score)} onChange={event => onPlace(scores[event.target.valueAsNumber])} />
+      <input className="scale-slider" data-side={score === null ? 'unplaced' : sideOf(score)}
+        aria-label="Your place on the left–right scale"
+        aria-valuetext={score === null ? 'Position not chosen' : `${score}, ${placement(score)}`}
+        type="range" min="0" max={scores.length - 1} step="1"
+        value={score === null ? scores.indexOf(4) : scores.indexOf(score)}
+        onChange={event => onPlace(scores[event.currentTarget.valueAsNumber])}
+        onClick={event => { if (score === null) onPlace(scores[event.currentTarget.valueAsNumber]); }} />
       <div className="scale-ticks" aria-label="Choose a position">
         {scores.map(value => <button key={value} onClick={() => onPlace(value)}
           aria-label={`Position ${value}`} aria-pressed={score === value}>{value}</button>)}
       </div>
       <div className="scale-sides" aria-hidden="true"><span>← Left</span><span>Right →</span></div>
     </div>
-    <Continue onClick={onConfirm}>This is me</Continue>
+    <Continue onClick={onConfirm} disabled={score === null}>This is me</Continue>
   </>;
 }
 
@@ -91,14 +102,17 @@ export function QuestionControls({ question, onAnswer }: {
   </div>;
 }
 
-export function ResultControls({ question, choice, score, final, onContinue }: {
-  question: StoryQuestion; choice: Choice; score: Score; final: boolean; onContinue: () => void;
+export function ResultControls({ question, choice, score, alignment, final, onContinue }: {
+  question: StoryQuestion; choice: Choice; score: Score; alignment: AnswerAlignment;
+  final: boolean; onContinue: () => void;
 }) {
-  const left = question.stats.left[choice].percent;
-  const right = question.stats.right[choice].percent;
-  const otherSide = sideOf(score) === 'left' ? 'right' : 'left';
-  const otherShare = question.stats[otherSide][choice].percent;
-  const gap = left !== null && right !== null ? Math.abs(left - right) : null;
+  const startSide = sideOf(score);
+  const { gap } = alignment;
+  const note = alignment.side === null
+    ? 'Both sides chose this answer about as often.'
+    : alignment.side === startSide
+      ? `This answer was more common on the ${startSide}, where you placed yourself.`
+      : `You placed yourself on the ${startSide}. This answer was more common on the ${alignment.side}.`;
   return <>
     <div className="result-rows">
       {(['left', 'right'] as const).map(side => {
@@ -113,9 +127,8 @@ export function ResultControls({ question, choice, score, final, onContinue }: {
         </div>;
       })}
     </div>
-    {gap !== null && otherShare !== null && <p className="result-note">
-      The groups are {sharePercent.format(gap)} percentage points apart.
-      {' '}{sharePercent.format(otherShare)}% of people on the {otherSide} chose the same answer as you.
+    {gap !== null && <p className="result-note">
+      {note}{gap > 0 && ` The groups were ${sharePercent.format(gap)} percentage points apart.`}
     </p>}
     <Continue onClick={onContinue}>{final ? 'Start over' : 'Next question'}</Continue>
   </>;
