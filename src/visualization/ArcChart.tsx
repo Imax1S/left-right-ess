@@ -1,4 +1,4 @@
-import { useMemo, useRef } from 'react';
+import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
 import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, StoryQuestion } from '../domain/model.ts';
@@ -21,6 +21,10 @@ type MotionStyle = CSSProperties & { '--delay': string };
 
 export function ArcChart({ dots, score, country, comparison, result, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const markerRef = useRef<SVGGElement>(null);
+  const previousScore = useRef(score);
+  const dragPlacement = useRef(false);
+  const canPlace = onPlace !== undefined;
   const arc = useMemo(() => arcLayout(dots, score), [dots, score]);
   const questionId = result?.question.id;
   const choice = result?.choice;
@@ -32,8 +36,9 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
     [dots, questionId, choice, destination, arc.radius],
   );
   const pointers = score === null ? null : readerOnArc(score);
-  const showPlacementHint = score === null && onPlace !== undefined;
+  const showPlacementHint = score === null && canPlace;
   const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
+  const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
   const leftLabel = result?.question.options[0] ?? '';
   const rightLabel = result?.question.options[1] ?? '';
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
@@ -50,24 +55,43 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
     top: `${unplacedMarker.y / viewBox.height * 100}%`,
   };
 
-  function placeAt(clientX: number, clientY: number) {
+  useLayoutEffect(() => {
+    const entering = previousScore.current === null && score !== null;
+    const fromDrag = dragPlacement.current;
+    previousScore.current = score;
+    dragPlacement.current = false;
+
+    if (!canPlace || !entering || fromDrag || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const animation = markerRef.current?.animate([
+      { transform: `translate(${unplacedMarker.x}px, ${unplacedMarker.y}px)` },
+      { transform: markerTransform },
+    ], { duration: 240, easing: 'cubic-bezier(0.33, 0, 0.22, 1)' });
+    return () => animation?.cancel();
+  }, [canPlace, markerTransform, score]);
+
+  function placeAt(clientX: number, clientY: number, fromDrag = false) {
     const screen = svgRef.current?.getScreenCTM();
     if (!screen) return;
     const point = new DOMPoint(clientX, clientY).matrixTransform(screen.inverse());
     const mark = scoreFromArcPoint(point, score === null);
-    if (mark !== null && mark !== score) onPlace?.(mark);
+    if (mark !== null && mark !== score && onPlace) {
+      dragPlacement.current = fromDrag;
+      onPlace(mark);
+    }
   }
 
   function startDrag(event: PointerEvent<HTMLDivElement>) {
     if (event.isPrimary && event.button === 0) {
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
+      markerRef.current?.getAnimations().forEach(animation => animation.cancel());
     }
   }
 
   function moveDrag(event: PointerEvent<HTMLDivElement>) {
     if (event.currentTarget.hasPointerCapture(event.pointerId)) {
-      placeAt(event.clientX, event.clientY);
+      placeAt(event.clientX, event.clientY, true);
     }
   }
 
@@ -117,7 +141,7 @@ export function ArcChart({ dots, score, country, comparison, result, onPlace }: 
                 : <rect x={-diameter / 2} y={-diameter / 2} width={diameter} height={diameter} rx="1.6" transform="rotate(45)" />}
             </g>;
           })}
-          <g className="reader-marker" style={{ transform: `translate(${selected.x}px, ${selected.y}px)` }}>
+          <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
             {score === null || sideOf(score) === 'right'
               ? <rect x="-12" y="-12" width="24" height="24" rx="4" transform="rotate(45)" />
               : <circle r="17" />}
