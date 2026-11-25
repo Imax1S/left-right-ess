@@ -1,5 +1,7 @@
-import { questionChoices, sides } from '../domain/model.ts';
-import type { Choice, StoryQuestion } from '../domain/model.ts';
+import { questionChoices, sideOf, sides } from '../domain/model.ts';
+import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
+
+import type { Answers } from './session.ts';
 
 interface Example {
   question: StoryQuestion;
@@ -32,4 +34,21 @@ export function takeawayExamples(questions: readonly StoryQuestion[]) {
   }
 
   return { agreement, widest };
+}
+
+export function groupMatch(questions: readonly StoryQuestion[], score: Score, answers: Answers) {
+  const side = sideOf(score);
+  let matches = 0;
+  let compared = 0;
+  questions.forEach((question, index) => {
+    const choice = answers[index];
+    if (choice === undefined) return;
+    const selected = question.stats[side][choice].percent;
+    if (selected === null) return;
+
+    const mostCommon = Math.max(...questionChoices(question).map(option => question.stats[side][option].percent ?? 0));
+    if (Math.round(selected * 10) === Math.round(mostCommon * 10)) matches++;
+    compared++;
+  });
+  return { matches, compared };
 }

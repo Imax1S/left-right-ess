@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
 import type { ReactNode, Ref } from 'react';
-import { sideLabels, sides } from '../domain/model.ts';
+import { sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts';
 import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
 import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { matchesHighlights } from './highlights.ts';
-import { takeawayExamples } from './takeaway.ts';
+import { groupMatch, takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession } from './session.ts';
 import type { Answers } from './session.ts';
 
@@ -142,6 +142,8 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   onBack: () => void; onRestart: () => void;
 }) {
   const { agreement, widest } = takeawayExamples(data.questions);
+  const { matches, compared } = groupMatch(data.questions, score, answers);
+  const group = sideLabels[sideOf(score)];
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -151,39 +153,51 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">
         A label tells <mark>part</mark> of the story.
       </h1>
-      <div className="conclusion-mark">
-        <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
-        <span>Your starting mark <b>{score}</b></span>
+      <div className="conclusion-summary">
+        <div className="conclusion-mark">
+          <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
+          <div><span>Your starting group</span><b>{group}{score !== 5 && ' · Mark ' + score}</b></div>
+        </div>
+        {compared > 0 ? <>
+          <p className="conclusion-score"><strong>{matches}</strong> <span>of {compared}</span></p>
+          <p>Answers that matched the most common choice in your starting group.</p>
+          <div className="conclusion-dots" aria-hidden="true">
+            {Array.from({ length: compared }, (_, i) => <i className={i < matches ? 'is-match' : ''} key={i} />)}
+          </div>
+        </> : <p>There are no comparable responses in your starting group.</p>}
       </div>
     </section>
-    <section aria-labelledby="personal-answers">
-      <h2 id="personal-answers">Your answers, side by side</h2>
-      <p className="conclusion-intro">The percentages show how many people in each group chose the same answer as you.</p>
-      <div className="conclusion-cards">
-        {data.questions.map((question, index) => {
-          const choice = answers[index];
-          if (choice === undefined) return null;
-          return <article key={question.id} className="conclusion-card">
-            <h3>{question.topic}</h3>
-            <p>You chose <b>“{question.options[choice]}”</b></p>
-            <AnswerShares question={question} choice={choice} />
-          </article>;
-        })}
-      </div>
-    </section>
-    {(agreement || widest) && <section aria-labelledby="group-patterns">
-      <h2 id="group-patterns">Where the groups agreed and differed</h2>
-      <div className="conclusion-cards">
-        {[
-          { title: 'A majority in every group', example: agreement },
-          { title: 'The widest gap', example: widest },
-        ].map(({ title, example }) => example && <article key={title} className="conclusion-card">
-          <h3>{title}</h3>
-          <p>{example.question.topic} · “{example.question.options[example.choice]}”</p>
-          <AnswerShares question={example.question} choice={example.choice} />
-        </article>)}
-      </div>
-    </section>}
+    <details className="conclusion-details">
+      <summary>See the full breakdown</summary>
+      <section aria-labelledby="personal-answers">
+        <h2 id="personal-answers">Your answers, side by side</h2>
+        <p className="conclusion-intro">The percentages show how many people in each group chose the same answer as you.</p>
+        <div className="conclusion-cards">
+          {data.questions.map((question, index) => {
+            const choice = answers[index];
+            if (choice === undefined) return null;
+            return <article key={question.id} className="conclusion-card">
+              <h3>{question.topic}</h3>
+              <p>You chose <b>“{question.options[choice]}”</b></p>
+              <AnswerShares question={question} choice={choice} />
+            </article>;
+          })}
+        </div>
+      </section>
+      {(agreement || widest) && <section aria-labelledby="group-patterns">
+        <h2 id="group-patterns">Where the groups agreed and differed</h2>
+        <div className="conclusion-cards">
+          {[
+            { title: 'A majority in every group', example: agreement },
+            { title: 'The widest gap', example: widest },
+          ].map(({ title, example }) => example && <article key={title} className="conclusion-card">
+            <h3>{title}</h3>
+            <p>{example.question.topic} · “{example.question.options[example.choice]}”</p>
+            <AnswerShares question={example.question} choice={example.choice} />
+          </article>)}
+        </div>
+      </section>}
+    </details>
     <div className="conclusion-close">
       <p>Where people place themselves gives a clue about what they might think. Ask them about the issue to find out.</p>
       <Continue onClick={onRestart}>Start over</Continue>

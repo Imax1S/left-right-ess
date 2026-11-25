@@ -3,7 +3,7 @@ import test from 'node:test';
 import type { Dot } from '../src/domain/model.ts';
 import { matchesHighlights } from '../src/story/highlights.ts';
 import config from '../story.config.ts';
-import { takeawayExamples } from '../src/story/takeaway.ts';
+import { groupMatch, takeawayExamples } from '../src/story/takeaway.ts';
 import { ess11Source } from '../src/ess/source.ts';
 import { prepareStory } from '../src/domain/prepareStory.ts';
 
@@ -45,4 +45,13 @@ test('the takeaway shows both shared agreement and the widest gap', async () => 
   assert.deepEqual(story.questions.map(question => question.association?.toFixed(2)), [
     '0.12', '0.24', '0.10', '0.17', '0.14', '0.07',
   ]);
+});
+
+test('a personal result counts the most common answer in the original group for each answered question', async () => {
+  const story = await prepareStory(await ess11Source(), config);
+  const answers = { 0: 'a', 1: 'a', 2: 'a', 3: 'b', 4: 'neutral', 5: 'a' } as const;
+  assert.deepEqual(groupMatch(story.questions, 5, answers), { matches: 5, compared: 6 });
+  assert.deepEqual(groupMatch(story.questions, 4, answers), { matches: 4, compared: 6 });
+  assert.deepEqual(groupMatch(story.questions, 5, { 0: 'neutral' }), { matches: 0, compared: 1 });
+  assert.deepEqual(groupMatch(story.questions, 5, {}), { matches: 0, compared: 0 });
 });

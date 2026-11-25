@@ -1,4 +1,4 @@
-import { questionChoices, scores, sideLabels, sideOf, sides } from '../domain/model.ts';
+import { scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from './answerAlignment.ts';
 
@@ -59,20 +59,21 @@ export function ScaleControls({ score, shown, onPlace }: {
   </div>;
 }
 
-const answerIcons = { a: 'm5 16 7 7L27 8', neutral: 'M7 16h18', b: 'm8 8 16 16M24 8 8 24' } as const;
+const answerIcons = { a: 'm5 16 7 7L27 8', b: 'm8 8 16 16M24 8 8 24' } as const;
 
 export function QuestionControls({ question, onAnswer }: {
   question: StoryQuestion; onAnswer: (choice: Choice) => void;
 }) {
-  const options = questionChoices(question);
-  return <div className={options.length === 3 ? 'answer-options has-middle' : 'answer-options'}
-    role="group" aria-label="Choose your answer">
-    {options.map(choice => <button key={choice} onClick={() => onAnswer(choice)}>
+  return <div className="answer-options" role="group" aria-label="Choose your answer">
+    {(['a', 'b'] as const).map(choice => <button key={choice} onClick={() => onAnswer(choice)}>
       <svg aria-hidden="true" width="29" height="29" viewBox="0 0 32 32" fill="none">
         <path d={answerIcons[choice]} stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
       <span>{question.options[choice]}</span>
     </button>)}
+    {question.options.neutral && <button className="answer-middle" onClick={() => onAnswer('neutral')}>
+      {question.options.neutral}
+    </button>}
   </div>;
 }
 

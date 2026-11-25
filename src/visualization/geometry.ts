@@ -1,4 +1,4 @@
-import { questionChoices, scores, sideOf } from '../domain/model.ts';
+import { scores, sideOf } from '../domain/model.ts';
 import type { Choice, Dot, Question, Score, Side } from '../domain/model.ts';
 
 export interface Point { x: number; y: number }
@@ -129,28 +129,41 @@ export function arcLayout(dots: readonly Dot[], selected: Score | null = null) {
   }) };
 }
 
+function hollowSlots(radius: number) {
+  const limit = inner - radius - 3;
+  const pitch = 2 * radius + Math.min(2.1, radius * 0.45);
+  const points: Point[] = [];
+  for (let dy = radius + 4; dy <= limit; dy += pitch) {
+    const halfWidth = Math.sqrt(limit ** 2 - dy ** 2);
+    const columns = Math.floor(2 * halfWidth / pitch) + 1;
+    for (let i = 0; i < columns; i++) {
+      points.push({ x: origin.x + (i - (columns - 1) / 2) * pitch, y: origin.y - dy });
+    }
+  }
+  return points;
+}
+
 export function answerLayout(
   dots: readonly Dot[], question: Pick<Question, 'id' | 'options'>, choice: Choice, markerScore: Score, radiusLimit = 6.7,
 ) {
-  const options = [...questionChoices(question)];
-  const width = Math.PI / options.length;
-  const originalIndex = options.indexOf(choice);
+  const middlePeople = question.options.neutral === undefined
+    ? null : dots.filter(dot => dot.answers[question.id] === 'neutral');
   const side = sideOf(markerScore);
-  const selectedIndex = side === 'left' ? 0 : side === 'right' ? options.length - 1
-    : options.length === 3 ? 1 : originalIndex;
-
-  // Place the reader's answer near the political group where it is most common.
-  [options[originalIndex], options[selectedIndex]] = [options[selectedIndex], options[originalIndex]];
+  const reversed = (choice === 'a' && side === 'right') || (choice === 'b' && side === 'left');
+  const options = reversed ? ['b', 'a'] as const : ['a', 'b'] as const;
   const groups = options.map((option, i) => ({
     option,
     people: dots.filter(dot => dot.answers[question.id] === option),
-    start: i * width + (i === 0 ? 0 : 0.025),
-    end: (i + 1) * width - (i + 1 === options.length ? 0 : 0.025),
+    start: i === 0 ? 0 : Math.PI / 2 + 0.025,
+    end: i === 0 ? Math.PI / 2 - 0.025 : Math.PI,
   }));
 
-  const { start, end } = groups[selectedIndex];
-  const preferredAngle = (scores.indexOf(markerScore) + 0.5) * sectorAngle;
-  const marker = polar(Math.max(start + 0.17, Math.min(end - 0.17, preferredAngle)), 132);
+  let marker = { x: origin.x, y: origin.y - inner / 2 };
+  const selected = groups.find(group => group.option === choice);
+  if (selected) {
+    const preferredAngle = (scores.indexOf(markerScore) + 0.5) * sectorAngle;
+    marker = polar(Math.max(selected.start + 0.17, Math.min(selected.end - 0.17, preferredAngle)), 132);
+  }
   let r = radiusLimit;
   const makeSlots = () => groups.map(({ option, people, start, end }) => bandSlots(start, end, r, people.length)
     .filter(point => option !== choice || clearOfReader(point, marker, r)));
@@ -161,11 +174,25 @@ export function answerLayout(
   }
   const placed: PlacedDot[] = groups.flatMap(({ people }, i) =>
     spread(slots[i], people.length).map((point, j) => ({ ...point, r, person: people[j] })));
+
+  if (middlePeople?.length) {
+    let middleRadius = radiusLimit;
+    const available = () => hollowSlots(middleRadius)
+      .filter(point => choice !== 'neutral' || clearOfReader(point, marker, middleRadius));
+    let points = available();
+    while (points.length < middlePeople.length) {
+      middleRadius *= 0.88;
+      points = available();
+    }
+    placed.push(...spread(points, middlePeople.length)
+      .map((point, i) => ({ ...point, r: middleRadius, person: middlePeople[i] })));
+  }
   const missing = dots.filter(dot => !dot.answers[question.id] || dot.answers[question.id] === 'missing').length;
   return {
     marker,
     dots: placed,
     bands: groups.map(({ option, people, start, end }) => ({ option, count: people.length, path: arcBand(start, end) })),
+    middle: middlePeople === null ? null : { option: 'neutral' as const, count: middlePeople.length },
     missing,
     other: dots.length - placed.length - missing,
   };

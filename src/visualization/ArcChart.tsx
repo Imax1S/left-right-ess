@@ -55,6 +55,9 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
   const showPlacementHint = score === null && canPlace;
   const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
+  const captions = groups && (groups.middle
+    ? [groups.bands[0], groups.middle, groups.bands[1]]
+    : groups.bands);
   const omitted = groups && [
     groups.missing > 0 ? groups.missing + ' no recorded answer' : '',
     groups.other > 0 ? groups.other + ' outside the answer groups' : '',
@@ -118,8 +121,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
     .join(', ');
 
   return (
-    <figure className={figureClass} aria-label={groups && question && choice
-      ? 'Shown respondents by answer. ' + groups.bands.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
+    <figure className={figureClass} aria-label={captions && question && choice
+      ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
@@ -171,9 +174,9 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
           <div className={`arc-drag-target ${pointers ? 'arc-drag-handle' : 'arc-drag-start'}`} aria-hidden="true"
             style={dragTargetStyle} onPointerDown={startDrag} onPointerMove={moveDrag} />
         </>}
-        {groups && question && <div className="cluster-caption">
-          {groups.bands.map(({ option, count }) => (
-            <div key={option} className={choice === option ? 'selected' : undefined}>
+        {captions && question && <div className="cluster-caption">
+          {captions.map(({ option, count }) => (
+            <div key={option} className={choice === option ? 'selected' : undefined} data-answer={option}>
               <span>{question.options[option]}</span>
               <strong>{count}</strong>
             </div>

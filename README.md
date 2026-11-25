@@ -22,7 +22,7 @@ The arc borrows its shape from a parliamentary seating chart. Red circles, muted
 
 We group self-placement as left (0–4), centre (5) and right (6–10). Percentages use all displayed answer groups, including middle answers wherever the survey offered one. The arc reports missing and ungrouped responses separately. Estimates pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). The response counts are unweighted.
 
-The finale keeps the reader’s starting mark and compares each of their answers across the three groups. It also shows an example of shared agreement and the answer with the largest difference between groups.
+The finale shows how often the reader chose the most common answer in their starting group. Open the details to compare each answer across all three groups and see the clearest examples of agreement and disagreement.
 
 The arc is a deterministic weighted sample. After giving each country a place, the sampler allocates the other dots as close as possible to each country’s share of the survey weight. You can highlight a country, age group, gender, education level or religiosity level on the arc. The country filter changes the highlights on those 100 dots. The survey percentages continue to describe the pooled comparison.
 

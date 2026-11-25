@@ -118,7 +118,7 @@ export function Methodology({ data }: { data: StoryData }) {
         <div>
           <h2 id="method-answers">From survey answers to answer groups</h2>
           <p>We combine related answers and keep middle responses wherever the survey provides one. We mark missing responses and answers outside the groups separately from the displayed choices.</p>
-          <p>The dots regroup by answer. The reader marker lands in the chosen answer band, toward the political group where that answer is most common. Each question starts at the reader’s original mark.</p>
+          <p>The dots regroup by answer. Middle answers collect inside the arc. For either outer answer, the reader marker lands in the selected band, toward the group where that answer is most common. Each question starts at the reader’s original mark.</p>
         </div>
         {agreement && <figure className="method-card method-recode">
           <figcaption>{agreement.prompt}</figcaption>
@@ -139,6 +139,7 @@ export function Methodology({ data }: { data: StoryData }) {
     <section aria-labelledby="method-questions">
       <h2 id="method-questions">Question groupings and associations</h2>
       <p>The gap is the difference between the highest and lowest weighted shares, in percentage points. A shared majority means more than half of each political group chose the same answer.</p>
+      <p>The personal result counts questions where your choice was the most common in your starting group. Tied shares at the displayed precision count as equally common.</p>
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}
       </div>
