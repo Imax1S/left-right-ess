@@ -1,0 +1,43 @@
+import assert from 'node:assert/strict';
+import test from 'node:test';
+import { prepareStory } from '../src/domain/prepareStory.ts';
+import { ess11Source } from '../src/ess/source.ts';
+
+test('uses real weighted side denominators, and keeps other responses and sample distinct', async () => {
+  const source = await ess11Source();
+  const data = await prepareStory(source, {
+    questions: ['inequality'], countries: source.countryCodes, dotCount: 100,
+  });
+  assert.equal(data.source.records, 50116);
+  assert.equal(data.eligibleCount, 22123);
+  assert.equal(data.dots.length, 100);
+  assert.equal(new Set(data.dots.map(dot => dot.id)).size, 100);
+  assert.equal(data.questions[0].stats.left.a.percent?.toFixed(1), '78.3');
+  assert.equal(data.questions[0].stats.right.a.percent?.toFixed(1), '61.2');
+  assert.equal(data.questions[0].stats.left.other.percent?.toFixed(1), '14.5');
+  assert.equal(data.countries.find(country => country.code === 'EE')?.name, 'Estonia');
+});
+
+test('preserves configured question order, country scope and requested dot count', async () => {
+  const source = await ess11Source();
+  const data = await prepareStory(source, {
+    questions: ['freedom', 'inequality'], countries: ['EE', 'FI'], dotCount: 17,
+  });
+  assert.deepEqual(data.questions.map(question => question.id), ['freedom', 'inequality']);
+  assert.deepEqual(data.countries.map(country => country.code), ['EE', 'FI']);
+  assert.equal(data.dots.length, 17);
+  assert.ok(data.dots.every(dot => dot.country === 'EE' || dot.country === 'FI'));
+  assert.equal(JSON.stringify(data), JSON.stringify(await prepareStory(source, {
+    questions: ['freedom', 'inequality'], countries: ['EE', 'FI'], dotCount: 17,
+  })));
+});
+
+test('rejects unknown countries and questions during generation', async () => {
+  const source = await ess11Source();
+  await assert.rejects(prepareStory(source, {
+    questions: ['inequality'], countries: ['US'], dotCount: 10,
+  }), /Unknown country/);
+  await assert.rejects(prepareStory(source, {
+    questions: ['unavailable'], countries: ['EE'], dotCount: 10,
+  }), /Unknown question/);
+});

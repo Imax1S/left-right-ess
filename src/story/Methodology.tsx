@@ -1,0 +1,41 @@
+import type { StoryData } from '../domain/model.ts';
+import { Arrow, integer } from './controls.tsx';
+import { Wordmark } from './Story.tsx';
+
+export function Methodology({ data }: { data: StoryData }) {
+  return <main className="method-page">
+    <header><Wordmark /><a href="#"><Arrow back /> Back to the story</a></header>
+    <h1 tabIndex={-1} id="method-heading">Data &amp; methodology</h1>
+    <section>
+      <h2>The survey</h2>
+      <p>{data.source.title}. This release extract has {integer.format(data.source.records)} records from {data.source.countries} countries
+        ({data.source.years}). The comparison in this story uses {data.countries.length} selected countries and {integer.format(data.eligibleCount)} eligible records.</p>
+      <p>{data.countries.map(country => country.name).join(', ')}.</p>
+    </section>
+    <section>
+      <h2>Left and right</h2>
+      <p>The ESS asks people to place themselves from 0 (left) to 10 (right). We compare positions 0–4 and 6–10.
+        The comparison requires a valid recorded age, an eligible position and a positive survey weight. The midpoint, 5, sits outside these two groups.</p>
+    </section>
+    <section>
+      <h2>What the dots and percentages show</h2>
+      <p>Each of the {integer.format(data.dots.length)} dots is a distinct survey respondent selected with a deterministic, weighted sample.
+        The same people move to their recorded answer group on each question. A country choice highlights points for the placement step.</p>
+      <p>Percentages use the full eligible pool. Each answer’s share is its sum of weights divided by the total weight within the same political group.
+        The count beside each percentage is an unweighted count. Midpoints, missing and other responses stay in the denominator.
+        We combine the ESS post-stratification and population weights (<code>pspwght × pweight</code>) for the pooled comparison.</p>
+    </section>
+    <section>
+      <h2>Question groupings</h2>
+      <ul>{data.questions.map(question => <li key={question.id}>
+        <strong>{question.topic}</strong>
+        <p>{question.prompt} {question.grouping}</p>
+      </li>)}</ul>
+    </section>
+    <footer>
+      <a href={data.source.doi}>European Social Survey dataset</a>
+      <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">{data.source.license}</a>
+      <a href="https://github.com/Imax1S/left-right-ess">Source code</a>
+    </footer>
+  </main>;
+}
