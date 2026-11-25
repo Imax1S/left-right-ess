@@ -145,8 +145,10 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
 }) {
   const { agreement, widest } = takeawayExamples(data.questions);
   const { matches, compared } = groupMatch(data.questions, score, answers);
-  const group = sideLabels[sideOf(score)];
+  const startingSide = sideOf(score);
+  const group = sideLabels[startingSide];
   const patterns = data.responsePatterns;
+  const groupFullMatch = patterns?.fullMatchPercentByGroup?.[startingSide] ?? null;
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -173,18 +175,18 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
     {patterns && <section className="conclusion-context" aria-labelledby="conclusion-context-heading">
       <h2 id="conclusion-context-heading">How others answered</h2>
       <div className="conclusion-cards">
-        <article className="conclusion-card conclusion-stat">
+        {groupFullMatch !== null && <article className="conclusion-card conclusion-stat">
           <h3>Matching on every question</h3>
-          <strong>{formatShare(patterns.fullMatchPercent)}</strong>
-          <p>chose their group’s most common answer on every question.</p>
-        </article>
+          <strong>{formatShare(groupFullMatch)}</strong>
+          <p>of respondents in the {startingSide} group chose their group’s most common answer on every question.</p>
+        </article>}
         {patterns.sharedAcrossGroupsPercent !== null && <article className="conclusion-card conclusion-stat">
           <h3>Same answers across groups</h3>
           <strong>{formatShare(patterns.sharedAcrossGroupsPercent)}</strong>
           <p>gave a set of answers that appeared in all three groups.</p>
         </article>}
       </div>
-      <p className="conclusion-context-note">Weighted shares among {integer.format(patterns.count)} ESS respondents who chose a displayed answer on every question.</p>
+      <p className="conclusion-context-note">Weighted results based on {integer.format(patterns.count)} ESS respondents who chose a displayed answer on every question.</p>
     </section>}
     <details className="conclusion-details">
       <summary>See the full breakdown</summary>

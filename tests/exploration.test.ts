@@ -62,6 +62,10 @@ test('benchmarks a complete match and shared answer patterns using the full weig
   assert.ok(profiles);
   assert.equal(profiles.count, 30686);
   assert.equal(profiles.fullMatchPercent.toFixed(1), '5.7');
+  assert.deepEqual(
+    (['left', 'centre', 'right'] as const).map(side => profiles.fullMatchPercentByGroup[side]?.toFixed(1)),
+    ['9.2', '4.8', '2.7'],
+  );
   assert.equal(profiles.sharedAcrossGroupsPercent?.toFixed(1), '98.5');
   assert.notEqual(profiles.count, story.dots.length);
 });

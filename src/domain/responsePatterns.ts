@@ -12,7 +12,8 @@ export function mostCommonChoices(question: StoryQuestion, side: Side): Choice[]
 
 export function summarizeResponsePatterns(people: readonly Respondent[], questions: readonly StoryQuestion[]): ResponsePatterns | null {
   const patterns = new Map<string, { weight: number; sides: Set<Side> }>();
-  const groups = new Set<Side>();
+  const empty = () => ({ weight: 0, fullMatchWeight: 0 });
+  const groups = { left: empty(), centre: empty(), right: empty() };
   const typical = new Map(sides.map(side => [side, questions.map(question => mostCommonChoices(question, side))]));
   const options = questions.map(questionChoices);
 
@@ -27,9 +28,13 @@ export function summarizeResponsePatterns(people: readonly Respondent[], questio
     count++;
     totalWeight += person.weight;
     const side = sideOf(person.score);
-    groups.add(side);
+    const group = groups[side];
+    group.weight += person.weight;
     const common = typical.get(side)!;
-    if (answers.every((answer, index) => common[index].includes(answer))) fullMatchWeight += person.weight;
+    if (answers.every((answer, index) => common[index].includes(answer))) {
+      group.fullMatchWeight += person.weight;
+      fullMatchWeight += person.weight;
+    }
 
     const key = answers.join(',');
     const pattern = patterns.get(key) ?? { weight: 0, sides: new Set<Side>() };
@@ -43,9 +48,14 @@ export function summarizeResponsePatterns(people: readonly Respondent[], questio
   for (const pattern of patterns.values()) {
     if (pattern.sides.size === sides.length) sharedWeight += pattern.weight;
   }
+  const groupPercent = (side: Side) => {
+    const { weight, fullMatchWeight } = groups[side];
+    return weight > 0 ? 100 * fullMatchWeight / weight : null;
+  };
   return {
     count,
     fullMatchPercent: 100 * fullMatchWeight / totalWeight,
-    sharedAcrossGroupsPercent: groups.size === sides.length ? 100 * sharedWeight / totalWeight : null,
+    fullMatchPercentByGroup: { left: groupPercent('left'), centre: groupPercent('centre'), right: groupPercent('right') },
+    sharedAcrossGroupsPercent: sides.every(side => groups[side].weight > 0) ? 100 * sharedWeight / totalWeight : null,
   };
 }

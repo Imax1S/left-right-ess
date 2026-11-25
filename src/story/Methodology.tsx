@@ -142,7 +142,7 @@ export function Methodology({ data }: { data: StoryData }) {
       <p>The personal result counts questions where your choice was the most common in your starting group. Tied shares at the displayed precision count as equally common.</p>
       {data.responsePatterns && <details className="method-disclosure">
         <summary>How we compared complete sets of answers</summary>
-        <p>We kept respondents who gave one of the displayed answers on every question. For each person, we checked if every answer was among the most common choices in their own group. We also checked if their exact set of grouped answers appeared at least once in each of the three groups. Both shares use survey weights.</p>
+        <p>We kept respondents who gave one of the displayed answers on every question. For each person, we checked if every answer was among the most common choices in their own group. We also checked if their exact set of grouped answers appeared at least once in each of the three groups. The full-match card uses respondents from your starting group. The overlap card uses all complete responses. Both shares use survey weights.</p>
       </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}

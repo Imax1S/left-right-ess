@@ -91,6 +91,7 @@ export interface StoryQuestion extends Question {
 export interface ResponsePatterns {
   count: number;
   fullMatchPercent: number;
+  fullMatchPercentByGroup: Record<Side, number | null>;
   sharedAcrossGroupsPercent: number | null;
 }
 
