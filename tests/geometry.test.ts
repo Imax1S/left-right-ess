@@ -86,6 +86,18 @@ test('reserves room for the reader in the selected score band', () => {
   assert.deepEqual(placed.dots.filter(dot => dot.person.score === 0), initial.dots.filter(dot => dot.person.score === 0));
 });
 
+test('places a lone respondent clear of the marker at every mark', () => {
+  for (const score of scores) {
+    const respondent = { id: '1', country: 'EE', score, answers: {} };
+    const { dots } = arcLayout([respondent], score);
+    assert.equal(dots.length, 1);
+    assert.equal(dots[0].person, respondent);
+    const { marker } = readerOnArc(score);
+    assert.ok(Math.hypot(dots[0].x - marker.x, dots[0].y - marker.y) >= dots[0].r + 21);
+    assert.equal(scoreFromArcPoint(dots[0], true), score);
+  }
+});
+
 test('leaves out respondents on the question where they answered outside the two choices', () => {
   const dots = [
     { id: '1', score: 2 as const, country: 'EE', answers: { first: 'other' as const, second: 'a' as const } },

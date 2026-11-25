@@ -119,9 +119,11 @@ export function arcLayout(dots: readonly Dot[], selected: Score | null = null) {
     if (selected === score) {
       const { marker } = readerOnArc(score);
       points = points.filter(point => clearOfReader(point, marker, radius));
+      // Give a lone dot two rings to choose from when the marker occupies the middle.
+      const candidates = Math.max(2, group.length);
       while (points.length < group.length) {
         radius *= 0.88;
-        points = bandSlots(...scoreAngles(score), radius, group.length)
+        points = bandSlots(...scoreAngles(score), radius, candidates)
           .filter(point => clearOfReader(point, marker, radius));
       }
     }
