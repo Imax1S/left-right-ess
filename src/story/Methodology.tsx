@@ -140,6 +140,10 @@ export function Methodology({ data }: { data: StoryData }) {
       <h2 id="method-questions">Question groupings and associations</h2>
       <p>The gap is the difference between the highest and lowest weighted shares, in percentage points. A shared majority means more than half of each political group chose the same answer.</p>
       <p>The personal result counts questions where your choice was the most common in your starting group. Tied shares at the displayed precision count as equally common.</p>
+      {data.responsePatterns && <details className="method-disclosure">
+        <summary>How we compared complete sets of answers</summary>
+        <p>We kept respondents who gave one of the displayed answers on every question. For each person, we checked if every answer was among the most common choices in their own group. We also checked if their exact set of grouped answers appeared at least once in each of the three groups. Both shares use survey weights.</p>
+      </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}
       </div>

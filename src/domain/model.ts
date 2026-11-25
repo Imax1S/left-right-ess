@@ -88,10 +88,17 @@ export interface StoryQuestion extends Question {
   association: number | null;
 }
 
+export interface ResponsePatterns {
+  count: number;
+  fullMatchPercent: number;
+  sharedAcrossGroupsPercent: number | null;
+}
+
 export interface StoryData {
   source: SurveySource;
   eligibleCount: number;
   countries: Country[];
   questions: StoryQuestion[];
+  responsePatterns: ResponsePatterns | null;
   dots: Dot[];
 }

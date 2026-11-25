@@ -144,6 +144,7 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const { agreement, widest } = takeawayExamples(data.questions);
   const { matches, compared } = groupMatch(data.questions, score, answers);
   const group = sideLabels[sideOf(score)];
+  const patterns = data.responsePatterns;
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -167,6 +168,22 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
         </> : <p>There are no comparable responses in your starting group.</p>}
       </div>
     </section>
+    {patterns && <section className="conclusion-context" aria-labelledby="conclusion-context-heading">
+      <h2 id="conclusion-context-heading">How others answered</h2>
+      <div className="conclusion-cards">
+        <article className="conclusion-card conclusion-stat">
+          <h3>Matching on every question</h3>
+          <strong>{formatShare(patterns.fullMatchPercent)}</strong>
+          <p>chose their group’s most common answer on every question.</p>
+        </article>
+        {patterns.sharedAcrossGroupsPercent !== null && <article className="conclusion-card conclusion-stat">
+          <h3>Same answers across groups</h3>
+          <strong>{formatShare(patterns.sharedAcrossGroupsPercent)}</strong>
+          <p>gave a set of answers that appeared in all three groups.</p>
+        </article>}
+      </div>
+      <p className="conclusion-context-note">Weighted shares among {integer.format(patterns.count)} ESS respondents who chose a displayed answer on every question.</p>
+    </section>}
     <details className="conclusion-details">
       <summary>See the full breakdown</summary>
       <section aria-labelledby="personal-answers">
@@ -199,7 +216,7 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
       </section>}
     </details>
     <div className="conclusion-close">
-      <p>Where people place themselves gives a clue about what they might think. Ask them about the issue to find out.</p>
+      <p>Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.</p>
       <Continue onClick={onRestart}>Start over</Continue>
     </div>
     <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>

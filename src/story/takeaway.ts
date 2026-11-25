@@ -1,6 +1,6 @@
 import { questionChoices, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
-
+import { mostCommonChoices } from '../domain/responsePatterns.ts';
 import type { Answers } from './session.ts';
 
 interface Example {
@@ -43,11 +43,8 @@ export function groupMatch(questions: readonly StoryQuestion[], score: Score, an
   questions.forEach((question, index) => {
     const choice = answers[index];
     if (choice === undefined) return;
-    const selected = question.stats[side][choice].percent;
-    if (selected === null) return;
-
-    const mostCommon = Math.max(...questionChoices(question).map(option => question.stats[side][option].percent ?? 0));
-    if (Math.round(selected * 10) === Math.round(mostCommon * 10)) matches++;
+    if (question.stats[side][choice].percent === null) return;
+    if (mostCommonChoices(question, side).includes(choice)) matches++;
     compared++;
   });
   return { matches, compared };

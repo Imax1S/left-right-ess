@@ -55,3 +55,13 @@ test('a personal result counts the most common answer in the original group for 
   assert.deepEqual(groupMatch(story.questions, 5, { 0: 'neutral' }), { matches: 0, compared: 1 });
   assert.deepEqual(groupMatch(story.questions, 5, {}), { matches: 0, compared: 0 });
 });
+
+test('benchmarks a complete match and shared answer patterns using the full weighted ESS data', async () => {
+  const story = await prepareStory(await ess11Source(), config);
+  const profiles = story.responsePatterns;
+  assert.ok(profiles);
+  assert.equal(profiles.count, 30686);
+  assert.equal(profiles.fullMatchPercent.toFixed(1), '5.7');
+  assert.equal(profiles.sharedAcrossGroupsPercent?.toFixed(1), '98.5');
+  assert.notEqual(profiles.count, story.dots.length);
+});

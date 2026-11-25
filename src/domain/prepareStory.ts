@@ -1,5 +1,6 @@
 import { choices, sideOf, sides } from './model.ts';
 import type { Choice, Question, Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
+import { summarizeResponsePatterns } from './responsePatterns.ts';
 import { sampleRespondents } from './sample.ts';
 
 function weightedAssociation(rows: readonly (readonly number[])[]) {
@@ -58,10 +59,12 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
   }
   const { source, countries, questions, people } = await adapter.load(config);
   if (!people.length) throw new Error('The selected countries have no eligible respondents');
+  const compared = questions.map(question => ({ ...question, ...summarize(people, question) }));
   return {
     source,
     countries,
-    questions: questions.map(question => ({ ...question, ...summarize(people, question) })),
+    questions: compared,
+    responsePatterns: summarizeResponsePatterns(people, compared),
     eligibleCount: people.length,
     dots: sampleRespondents(people, countries, config.dotCount),
   };

@@ -486,6 +486,14 @@ a { color: inherit; text-underline-offset: 0.2em; }
 }
 .conclusion-card h3 { margin: 0; font-size: clamp(14px, 3.4vw, 18px); }
 .conclusion-card p { align-self: start; font-size: 13px; color: var(--muted); }
+.conclusion-stat:first-child { background: #fceab1; }
+.conclusion-stat:nth-child(2) { background: var(--right-pale); }
+.conclusion-stat > strong {
+  font: 820 clamp(28px, 7vw, 44px)/1 var(--display);
+  letter-spacing: -0.07em;
+}
+.conclusion-stat p { color: var(--ink); font-size: 14px; line-height: 1.4; }
+.conclusion-context-note { margin-top: 9px; color: var(--muted); font-size: 12px; }
 .conclusion-shares {
   display: grid;
   align-self: end;
