@@ -1,12 +1,13 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import { scores, sideOf, sides } from '../domain/model.ts';
+import { quadrantKeys, scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
   answerLayout, arcBand, arcLayout, comparisonHeight, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
+import { quadrantCells, quadrantLayout } from './quadrantLayout.ts';
 
 interface Props {
   dots: Dot[];
@@ -14,6 +15,8 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
+  engagement?: boolean;
+  quadrant?: { inequality?: Choice; migration?: Choice };
   onPlace?: (score: Score) => void;
 }
 
@@ -35,7 +38,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, onPlace }: Props) {
+export function ArcChart({ dots, score, highlightedIds, comparison, result, engagement, quadrant, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -51,9 +54,16 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
       : null,
     [dots, question, choice, destination, arc.radius],
   );
+  const inequalityAnswer = quadrant?.inequality;
+  const migrationAnswer = quadrant?.migration;
+  const inQuadrants = quadrant !== undefined;
+  const grid = useMemo(
+    () => inQuadrants ? quadrantLayout(dots, inequalityAnswer, migrationAnswer) : null,
+    [dots, inQuadrants, inequalityAnswer, migrationAnswer],
+  );
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
-  const selected = groups?.marker ?? pointers?.marker ?? unplacedMarker;
+  const selected = grid?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
   const captions = groups && (groups.middle
     ? [groups.bands[0], groups.middle, groups.bands[1]]
@@ -64,7 +74,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
   ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
-  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}`;
+  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${engagement ? ' is-engagement' : ''}${grid ? ' is-quadrant' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
     left: `${pointers.start.x / viewBox.width * 100}%`,
@@ -121,18 +131,20 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
     .join(', ');
 
   return (
-    <figure className={figureClass} aria-label={captions && question && choice
+    <figure className={figureClass} aria-label={grid
+      ? 'The same respondents grouped by answers about income and immigration. Shapes identify their starting political groups.'
+      : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
-          <g className={groups ? 'chart-layer is-hidden' : 'chart-layer'}>
-            {sides.map(side => <path key={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
+          <g className={groups || grid ? 'chart-layer is-hidden' : 'chart-layer'}>
+            {sides.map(side => <path key={side} className={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
-            {score !== null && <path className="score-band" d={scoreBand(score)} />}
-            {pointerLine && <path className="score-pointer" d={pointerLine} />}
+            {score !== null && !engagement && <path className="score-band" d={scoreBand(score)} />}
+            {pointerLine && !engagement && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
             <text className="arc-end" x="200" y="211">5</text>
             <text className="arc-end" x="332" y="211">10</text>
@@ -141,26 +153,42 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
             {groups?.bands.map(({ option, path }) =>
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
+          <g className={grid ? 'chart-layer quadrant-canvas' : 'chart-layer quadrant-canvas is-hidden'}>
+            <text x="103" y="16" className="quadrant-column">Allow many / some</text>
+            <text x="297" y="16" className="quadrant-column">Allow a few / none</text>
+            {quadrantKeys.map((key, index) => {
+              const { x, y, width, height } = quadrantCells[key];
+              return <g key={key}>
+                <rect x={x} y={y} width={width} height={height} rx="9" />
+                <text x={x + 10} y={y + 19}>{index < 2 ? 'Reduce the income gap' : 'Oppose reducing the gap'}</text>
+              </g>;
+            })}
+            <path d="M 10 130 H 196 M 204 130 H 390" className="quadrant-neutral" />
+          </g>
           {dots.map((person, index) => {
+            const gridPoint = grid?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
-            const point = answerPoint ?? arcPositions.get(person.id)!;
+            const point = gridPoint ?? answerPoint ?? arcPositions.get(person.id)!;
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
-            const opacity = groups ? (answerPoint ? 1 : 0) : highlightedIds
+            const opacity = gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
+              : engagement ? (side === 'centre' ? 0.92 : 0.29)
+              : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : sameScore ? 1 : 0.5;
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
               opacity,
-              '--delay': groups ? `${(index % 15) * 20}ms` : '0ms',
+              '--delay': groups || grid ? `${(index % 15) * 20}ms` : '0ms',
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
-              data-highlighted={highlighted ? 'true' : undefined} data-same-score={sameScore ? 'true' : undefined}>
+              data-highlighted={highlighted ? 'true' : undefined}
+              data-same-score={sameScore && !grid && !engagement ? 'true' : undefined}>
               <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
-          <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
+          <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform, opacity: grid && !grid.marker ? 0 : 1 }}>
             <ReaderGlyph score={score} />
           </g>
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
@@ -183,7 +211,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, onPl
           ))}
         </div>}
       </div>
-      {!canPlace && score !== null && <figcaption className="arc-caption">
+      {!canPlace && !engagement && !grid && score !== null && <figcaption className="arc-caption">
         <span className="arc-legend">People at your starting mark ({score})</span>
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}

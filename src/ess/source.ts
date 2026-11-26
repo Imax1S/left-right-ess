@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises';
 import { isScore } from '../domain/model.ts';
+import { emptyEngagement, tallyEngagement } from '../domain/actTwo.ts';
 import type { Answer, Respondent, SurveyAdapter } from '../domain/model.ts';
 import { ess11Questions } from './questions.ts';
 import { essProfile } from './profile.ts';
@@ -51,6 +52,8 @@ export async function ess11Source(
     scale: field('lrscale'),
     weight: field('pspwght'),
     climateCause: field('ccnthum'),
+    vote: field('vote'),
+    influence: field('psppipla'),
     gender: field('gndr'),
     religiosity: extract.source.fields.indexOf('rlgdgr'),
     education: extract.source.fields.indexOf('eisced'),
@@ -69,6 +72,7 @@ export async function ess11Source(
         return { ...question, column: field(question.field) };
       });
       const people: Respondent[] = [];
+      const unplaced = emptyEngagement();
       const countries = config.countries.map(code => {
         if (!Object.hasOwn(extract.countries, code)) throw new Error(`Unknown country: ${code}`);
         const country = extract.countries[code];
@@ -79,13 +83,25 @@ export async function ess11Source(
           const score = row[indexes.scale];
           const age = row[indexes.age];
           const weight = row[indexes.weight];
-          if (score === null || !isScore(score) || age === null || !Number.isInteger(age) ||
-              age < 15 || age > 110 || weight === null || !Number.isFinite(weight) || weight <= 0) continue;
+          if (age === null || !Number.isInteger(age) || age < 15 || age > 110 ||
+              weight === null || !Number.isFinite(weight) || weight <= 0) continue;
+          const surveyWeight = weight * country.populationWeight;
+          const vote = row[indexes.vote];
+          const influence = row[indexes.influence];
+          const engagement = {
+            voted: vote === 1 ? true : vote === 2 ? false : undefined,
+            noSay: influence !== null && influence >= 1 && influence <= 5 ? influence <= 2 : undefined,
+          };
+          if (score === null || !isScore(score)) {
+            tallyEngagement(unplaced, surveyWeight, engagement);
+            continue;
+          }
           people.push({
             id: `${code}-${row[indexes.id]}`,
             country: code,
             score,
-            weight: weight * country.populationWeight,
+            weight: surveyWeight,
+            engagement,
             profile: essProfile(age, row[indexes.gender], row[indexes.religiosity] ?? null, row[indexes.education] ?? null),
             answers: Object.fromEntries(questions.map(question => [
               question.id, classify(question.type, row[question.column], row[indexes.climateCause]),
@@ -108,6 +124,7 @@ export async function ess11Source(
           id, topic: short, prompt: title, options: { a: labels[0], neutral: middleLabels[type], b: labels[1] }, grouping: note,
         })),
         people,
+        unplaced,
       };
     },
   };

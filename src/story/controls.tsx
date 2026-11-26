@@ -81,9 +81,9 @@ export function formatShare(percent: number | null) {
   return percent === null ? '—' : sharePercent.format(percent) + '%';
 }
 
-export function ResultControls({ question, choice, alignment, final, onContinue }: {
+export function ResultControls({ question, choice, alignment, continueLabel, onContinue }: {
   question: StoryQuestion; choice: Choice; alignment: AnswerAlignment;
-  final: boolean; onContinue: () => void;
+  continueLabel: string; onContinue: () => void;
 }) {
   const { gap, side: moreCommonOn } = alignment;
   const note = gap === null
@@ -124,6 +124,6 @@ export function ResultControls({ question, choice, alignment, final, onContinue 
         <p>Counts are unweighted. Percentages use survey weights.</p>
       </details>
     </section>
-    <Continue onClick={onContinue}>{final ? 'See the takeaway' : 'Next question'}</Continue>
+    <Continue onClick={onContinue}>{continueLabel}</Continue>
   </>;
 }

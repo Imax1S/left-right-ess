@@ -49,6 +49,43 @@ export interface SurveySource {
   countries: number;
 }
 
+export interface EngagementFlags {
+  voted?: boolean;
+  noSay?: boolean;
+}
+
+export interface EngagementTallies {
+  count: number;
+  weight: number;
+  votedYesWeight: number;
+  votedWeight: number;
+  noSayWeight: number;
+  sayWeight: number;
+}
+
+export interface GroupEngagement {
+  votedPercent: number | null;
+  noSayPercent: number | null;
+}
+
+export interface DisillusionedSummary {
+  unplacedCount: number;
+  unplacedSharePercent: number;
+  eligibleTotalCount: number;
+  groups: Record<Side | 'unplaced', GroupEngagement>;
+  centreNonVotersNoSayPercent: number | null;
+  centreVotersNoSayPercent: number | null;
+}
+
+export const quadrantKeys = ['reduceAllow', 'reduceLimit', 'opposeAllow', 'opposeLimit'] as const;
+export type QuadrantKey = (typeof quadrantKeys)[number];
+type QuadrantShares = Record<QuadrantKey, number | null>;
+
+export interface QuadrantSummary {
+  totalCount: number;
+  byGroup: Record<Side, QuadrantShares>;
+}
+
 export interface Respondent {
   id: string;
   country: string;
@@ -56,6 +93,7 @@ export interface Respondent {
   weight: number;
   answers: Record<string, Answer>;
   profile?: Profile;
+  engagement?: EngagementFlags;
 }
 
 export interface SurveyData {
@@ -63,6 +101,7 @@ export interface SurveyData {
   countries: Country[];
   questions: Question[];
   people: Respondent[];
+  unplaced?: EngagementTallies;
 }
 
 export interface SurveyAdapter {
@@ -101,5 +140,7 @@ export interface StoryData {
   countries: Country[];
   questions: StoryQuestion[];
   responsePatterns: ResponsePatterns | null;
+  disillusioned: DisillusionedSummary | null;
+  quadrant: QuadrantSummary | null;
   dots: Dot[];
 }

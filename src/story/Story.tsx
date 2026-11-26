@@ -6,6 +6,7 @@ import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
 import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
+import { EngagementDetails, QuadrantDetails, QuadrantLegend, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession } from './session.ts';
@@ -20,13 +21,19 @@ function Fact({ value, caption }: { value: ReactNode; caption: string }) {
 }
 
 export function Story({ data, showMethod }: { data: StoryData; showMethod: boolean }) {
+  const hasActTwo = Boolean(data.disillusioned && data.quadrant);
   const reduce = useMemo(() => createSessionReducer(
-    data.questions.map(question => question.id), data.countries.map(country => country.code),
-  ), [data]);
+    data.questions.map(question => question.id), data.countries.map(country => country.code), hasActTwo,
+  ), [data, hasActTwo]);
   const [state, dispatch] = useReducer(reduce, initialSession);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusOnChange = useRef(false);
   const { step, score } = state;
+  const actTwoScreen = state.step === 'engagement' || state.step === 'quadrant';
+  const quadrant = state.step === 'quadrant' ? {
+    inequality: state.answers[data.questions.findIndex(question => question.id === 'inequality')],
+    migration: state.answers[data.questions.findIndex(question => question.id === 'migration')],
+  } : undefined;
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
   const result = state.step === 'result' && question ? {
@@ -65,11 +72,12 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   let heading: ReactNode;
   let cards: ReactNode;
   let controls: ReactNode;
+  let chartNote: ReactNode;
   if (state.step === 'scale') {
     heading = <>Where do <mark>you</mark> place yourself?</>;
     cards = <>
-      <Fact value={integer.format(data.source.records)} caption="People interviewed" />
-      <Fact value={data.source.countries} caption={`Countries, ${data.source.years}`} />
+      <Fact value={integer.format(data.disillusioned?.eligibleTotalCount ?? data.eligibleCount)} caption="Respondents in this story" />
+      <Fact value={data.countries.length} caption={`Countries, ${data.source.years}`} />
     </>;
     controls = <>
       <SurveyIntro />
@@ -89,12 +97,22 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
+    const startsSecondAct = hasActTwo && data.questions[index + 1]?.id === 'understanding';
     const answer = result.question.options[result.choice];
     heading = answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
-    controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment} final={final}
+    controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
+      continueLabel={final ? 'See the takeaway' : startsSecondAct ? 'Look beyond the arc' : 'Next question'}
       onContinue={() => navigate({ type: 'next' })} />;
+  } else if (state.step === 'engagement' && data.disillusioned) {
+    heading = 'Who’s missing from the arc?';
+    chartNote = <UnplacedShare data={data.disillusioned} />;
+    controls = <EngagementDetails data={data.disillusioned} onContinue={() => navigate({ type: 'next' })} />;
+  } else if (state.step === 'quadrant' && data.quadrant) {
+    heading = 'Two answers. Four corners.';
+    chartNote = <QuadrantLegend />;
+    controls = <QuadrantDetails data={data.quadrant} onContinue={() => navigate({ type: 'next' })} />;
   }
 
   if (question) {
@@ -104,15 +122,15 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}${actTwoScreen ? ' step-act-two' : ''}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
         <div className="header-controls">
-          {(step === 'among' || question) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
+          {(step === 'among' || question || actTwoScreen) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
             <Arrow back /> Back
           </button>}
-          <span>{index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>
+          <span>{actTwoScreen ? 'Act 2' : index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>
         </div>
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
@@ -120,8 +138,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
         {cards && <div className="facts">{cards}</div>}
         <div className="story-plot">
           <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
-            comparison={question !== null} result={result} onPlace={step === 'scale' ? place : undefined} />
+            comparison={question !== null || actTwoScreen} result={result} engagement={step === 'engagement'}
+            quadrant={quadrant} onPlace={step === 'scale' ? place : undefined} />
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
+          {chartNote}
         </div>
       </div>
       <div className="story-controls">{controls}</div>
@@ -149,6 +169,8 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const group = sideLabels[startingSide];
   const patterns = data.responsePatterns;
   const groupFullMatch = patterns?.fullMatchPercentByGroup?.[startingSide] ?? null;
+  const understanding = data.questions.find(question => question.id === 'understanding');
+  const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -220,7 +242,8 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
       </section>}
     </details>
     <div className="conclusion-close">
-      <p>Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.</p>
+      <p>{sharedValue && 'Across the scale, most people saw themselves as someone who values understanding others. '}
+        Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.</p>
       <Continue onClick={onRestart}>Start over</Continue>
     </div>
     <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>

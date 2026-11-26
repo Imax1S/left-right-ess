@@ -2,10 +2,27 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { arcLayout, answerLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
+import { quadrantLayout } from '../src/visualization/quadrantLayout.ts';
 
 function question(id: string, neutral?: string) {
   return { id, options: { a: 'Agree', neutral, b: 'Disagree' } };
 }
+
+test('the four corners retain the sample and place neutral answers between the two rows', () => {
+  const dots = [
+    { id: '1', country: 'EE', score: 1, answers: { inequality: 'a', migration: 'a' } },
+    { id: '2', country: 'EE', score: 8, answers: { inequality: 'b', migration: 'b' } },
+    { id: '3', country: 'EE', score: 5, answers: { inequality: 'neutral', migration: 'a' } },
+    { id: '4', country: 'EE', score: 8, answers: { inequality: 'missing', migration: 'a' } },
+  ] as const;
+  const layout = quadrantLayout(dots, 'neutral', 'a');
+  const [upper, lower, neutral, missing] = dots.map(dot => layout.dots.get(dot.id)!);
+  assert.equal(layout.dots.size, dots.length);
+  assert.ok(upper.x < 200 && lower.x > 200);
+  assert.ok(upper.y < neutral.y && neutral.y < lower.y && lower.y < missing.y);
+  assert.ok(Math.abs(layout.marker!.y - neutral.y) < 9);
+  assert.ok(Math.abs(layout.marker!.x - neutral.x) >= neutral.r + 19);
+});
 
 test('arc and all answer bands keep people in bounds without overlap', () => {
   const dots = Array.from({ length: 200 }, (_, id) => ({

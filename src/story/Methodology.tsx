@@ -144,6 +144,11 @@ export function Methodology({ data }: { data: StoryData }) {
         <summary>How we compared complete sets of answers</summary>
         <p>We kept respondents who gave one of the displayed answers on every question. For each person, we checked if every answer was among the most common choices in their own group. We also checked if their exact set of grouped answers appeared at least once in each of the three groups. The full-match card uses respondents from your starting group. The overlap card uses all complete responses. Both shares use survey weights.</p>
       </details>}
+      {data.disillusioned && data.quadrant && <details className="method-disclosure">
+        <summary>Who is off the arc and how we made the four corners</summary>
+        <p>The off-arc comparison includes respondents within the same age and weight criteria who had no recorded mark from 0 to 10. Voting shares use yes or no answers among eligible voters. The little-or-no-say share combines the two lowest responses about political influence.</p>
+        <p>The four corners cross agreement or disagreement about reducing income differences with admitting many or some, or a few or no, immigrants from poorer countries outside Europe. The table uses the weighted distribution among respondents in the corners. In the sample illustration, neutral income answers sit between the rows and respondents without both answers sit below the grid.</p>
+      </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}
       </div>
