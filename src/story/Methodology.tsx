@@ -145,9 +145,9 @@ export function Methodology({ data }: { data: StoryData }) {
         <p>We kept respondents who gave one of the displayed answers on every question. For each person, we checked if every answer was among the most common choices in their own group. We also checked if their exact set of grouped answers appeared at least once in each of the three groups. The full-match card uses respondents from your starting group. The overlap card uses all complete responses. Both shares use survey weights.</p>
       </details>}
       {data.disillusioned && <details className="method-disclosure">
-        <summary>Who the grey dots represent</summary>
-        <p>The off-arc comparison includes respondents within the same age and weight criteria who had no recorded mark from 0 to 10. Voting shares use yes or no answers among eligible voters. Low trust in parliament is 0–4 on its 0–10 scale. The little-or-no-say share combines the two lowest responses about political influence.</p>
-        <p>The grey dots represent the weighted share without a mark. Their clusters illustrate the weighted answers to each question. They join the arc’s sample in the closing circle. The final comparison uses all valid answers. “More like me” combines the top three of the six original responses.</p>
+        <summary>Who the yellow dots represent</summary>
+        <p>{integer.format(data.disillusioned.unplacedCount)} of {integer.format(data.disillusioned.eligibleTotalCount)} eligible respondents had no recorded mark from 0 to 10. Low trust in parliament is 0–4 on its 0–10 scale. The little-or-no-say share combines the two lowest responses about political influence.</p>
+        <p>The yellow dots represent the weighted share without a mark. Their clusters illustrate the weighted answers to each question. They join the arc’s sample in the closing circle. Its headline percentage uses valid answers from people without a mark. “More like me” combines the top three of the six original responses.</p>
       </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}

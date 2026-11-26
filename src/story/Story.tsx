@@ -8,7 +8,7 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { OffArcAnswerDetails, offArcQuestions,
-  UnderstandingResult, understandingRange, UnplacedShare } from './ActTwo.tsx';
+  UnderstandingResult, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession, isActTwoStep, isOffArcStep } from './session.ts';
@@ -32,7 +32,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const focusOnChange = useRef(false);
   const { step, score } = state;
   const actTwoScreen = isActTwoStep(step);
-  const offArcQuestion = step === 'trust' || step === 'influence' || step === 'turnout' ? offArcQuestions[step] : null;
+  const offArcQuestion = step === 'trust' || step === 'influence' ? offArcQuestions[step] : null;
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
   const voteQuestion = hasActTwo && question?.id === 'vote';
@@ -48,10 +48,11 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const hasVotingCardSlot = showVotingCards || actTwoScreen || closingQuestion;
   const palette = isOffArcStep(step) ? ' is-monochrome'
     : closingCircle ? ' is-closing-result' : closingQuestion ? ' is-closing-question' : '';
-  const understandingCircle = closingCircle ? {
-    range: result && data.disillusioned ? understandingRange(data.disillusioned) : null,
-  } : undefined;
   const outside = data.disillusioned;
+  const understandingShare = outside?.groups.unplaced.understandingPercent ?? null;
+  const understandingCircle = closingCircle ? {
+    share: understandingShare === null ? null : formatShare(understandingShare),
+  } : undefined;
   const offArc = outside && (isOffArcStep(step) || closingQuestion) ? {
     share: outside.unplacedSharePercent,
     answerShare: offArcQuestion ? outside.groups.unplaced[offArcQuestion.field]
@@ -123,13 +124,14 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
     const answer = result.question.options[result.choice];
-    heading = answer === 'Agree' || answer === 'Disagree'
+    heading = voteQuestion
+      ? result.choice === 'a'
+        ? 'You voted. Some people didn’t. And some people didn’t even answer the question we started with.'
+        : 'You answered no. Some people didn’t give an answer to our first question at all.'
+      : answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
-      transitionNote={voteQuestion ? (result.choice === 'a'
-        ? 'You voted. Some people didn’t. And some people didn’t even answer the question we started with.'
-        : 'You answered no. Some people didn’t give an answer to our first question at all.') : undefined}
       continueLabel={final ? 'See the takeaway' : voteQuestion ? 'Continue' : 'Next question'} onContinue={next} />;
   } else if (state.step === 'missing-prompt') {
     heading = 'Could we be missing anyone?';
@@ -139,12 +141,17 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = <div className="act-two-panel">
       <UnplacedShare data={data.disillusioned} />
       <p>We know how they answered other questions. Let’s start with trust in parliament.</p>
-      <p className="act-note">The reasons for leaving the scale blank are unknown.</p>
       <Continue onClick={next}>Look at trust</Continue>
     </div>;
   } else if (offArcQuestion && data.disillusioned) {
     heading = offArcQuestion.prompt;
     controls = <OffArcAnswerDetails question={offArcQuestion} data={data.disillusioned} onContinue={next} />;
+  } else if (step === 'listening-bridge') {
+    heading = 'Can we listen across the political divide?';
+    controls = <div className="act-two-panel">
+      <p>Left, right, or no mark. There’s one last question we can ask everyone.</p>
+      <Continue onClick={next}>One last question</Continue>
+    </div>;
   }
 
   if (question && !hasVotingCardSlot) {
@@ -154,7 +161,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${hasVotingCardSlot ? ' step-act-two' : ''}${palette}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${hasVotingCardSlot ? ' step-act-two' : ''}${voteQuestion && result ? ' step-vote-result' : ''}${palette}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />

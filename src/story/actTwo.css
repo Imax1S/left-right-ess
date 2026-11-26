@@ -1,5 +1,10 @@
 .step-act-two .story-grid { gap: clamp(12px, 2vw, 22px); }
 .step-act-two .story-heading { max-width: 16ch; }
+.step-act-two.step-vote-result .story-heading {
+  max-width: none;
+  font-size: clamp(25px, 7vw, 44px);
+}
+.step-act-two.step-listening-bridge .story-heading { max-width: 18ch; }
 .step-act-two .story-plot { min-width: 0; }
 .step-act-two .story-visual { row-gap: 0; }
 .voting-cards {
@@ -15,7 +20,18 @@
 html { transition: filter 660ms ease, background-color 660ms ease; }
 html:has(.story-page.is-monochrome:not([hidden])) {
   background-color: #f1f1f1;
-  filter: grayscale(1) saturate(1);
+  color: #191919;
+}
+.story-page.is-monochrome {
+  --ink: #191919;
+  --muted: #525252;
+  --cream: #f8f8f8;
+  --left: #464646;
+  --centre: #595959;
+  --right: #464646;
+  --left-pale: #dcdcdc;
+  --centre-pale: #d8d8d8;
+  --right-pale: #dcdcdc;
 }
 html:has(.story-page.is-closing-question:not([hidden])) {
   background-color: #f8eedb;
@@ -26,7 +42,7 @@ html:has(.story-page.is-closing-result:not([hidden])) {
   filter: grayscale(0) saturate(1.16);
 }
 
-.unplaced-share > div:first-child {
+.unplaced-share {
   display: flex;
   align-items: center;
   gap: clamp(10px, 3vw, 22px);
@@ -36,10 +52,12 @@ html:has(.story-page.is-closing-result:not([hidden])) {
   font: 820 clamp(29px, 7vw, 60px)/1 var(--display);
   letter-spacing: -0.06em;
 }
-.unplaced-share div > span { font-weight: 850; }
-.unplaced-share p { margin-top: 6px; font-size: 12px; color: var(--muted); }
-.arc-figure .off-arc-dot { color: #626262; }
+.unplaced-share > span { font-weight: 850; }
+.placement-band { transition: fill 620ms ease; }
+.arc-figure .off-arc-dot { color: #f6e3a5; stroke: #806b39; stroke-width: 1; }
 .is-off-arc .reader-marker { opacity: 0.45; }
+.is-monochrome .is-off-arc .reader-marker { opacity: 0; }
+.is-monochrome .is-off-arc .respondent:not(.off-arc-dot) { color: #808080; }
 .off-arc-plot-label {
   fill: var(--ink);
   font-size: 10.5px;
@@ -63,9 +81,11 @@ html:has(.story-page.is-closing-result:not([hidden])) {
   flex: 0 0 9px;
   aspect-ratio: 1;
   border-radius: 50%;
-  background: #62626247;
+  background: #f6e3a5;
+  border: 1px solid #806b39;
+  opacity: 0.5;
 }
-.off-arc-answers div:first-child dt::before { background: #626262; }
+.off-arc-answers div:first-child dt::before { opacity: 1; }
 .off-arc-answers dd {
   margin: 0;
   font: 815 clamp(20px, 5vw, 36px)/1 var(--display);
@@ -74,9 +94,8 @@ html:has(.story-page.is-closing-result:not([hidden])) {
 
 .act-two-panel { display: grid; gap: 12px; }
 .act-two-panel > p { font-size: clamp(14px, 2vw, 18px); line-height: 1.43; }
-.act-two-panel p.act-note { color: var(--muted); font-size: clamp(11px, 1.25vw, 13px); line-height: 1.36; }
+.step-listening-bridge .act-two-panel > p { font-size: clamp(17px, 2vw, 22px); }
 .act-two-panel .continue { margin: 1px 0 0; }
-.vote-transition { margin-block: 12px; font-weight: 780; line-height: 1.45; }
 .is-closing-question :is(.story-heading, .story-controls) {
   animation: act-two-reveal 260ms ease 340ms both;
 }
@@ -87,15 +106,13 @@ html:has(.story-page.is-closing-result:not([hidden])) {
 .circle-outline { fill: none; stroke: #c6b99f; stroke-width: 1.3px; }
 .circle-core { fill: #ffe9a6; }
 .circle-number, .circle-label { fill: var(--ink); text-anchor: middle; }
-.circle-number { font: 840 23px var(--display); letter-spacing: -0.06em; }
+.circle-number { font: 840 34px var(--display); letter-spacing: -0.06em; }
 .circle-label { font: 820 10px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
 .is-understanding .respondent { transition-duration: 290ms, 820ms; transition-delay: 0ms, var(--delay); }
 .is-understanding .reader-marker { transition-duration: 760ms; }
-.understanding-result .result-rows { margin-top: 0; }
-.understanding-result .result-row.unplaced { color: #575956; }
-.understanding-result h2 { font: 790 clamp(15px, 3.5vw, 20px)/1.25 var(--display); }
 
 @media (min-width: 800px) {
   .step-act-two .story-grid { gap: 15px clamp(24px, 4vw, 72px); }
+  .step-act-two.step-vote-result .story-heading { font-size: clamp(26px, 3.3vw, 49px); }
   .voting-cards .facts { padding-block-end: calc(6px + clamp(32px, 5.5vw, 80px)); padding-inline-end: 10px; }
 }

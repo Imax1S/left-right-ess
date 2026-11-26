@@ -71,7 +71,7 @@ test('voting leads directly into the off-arc interlude and the final question', 
   const vote = act(voting, { type: 'answer', option: 'b' });
   const voteAnswers = { ...climate.answers, 4: 'b' };
   let previous: ReturnType<typeof act> = vote;
-  for (const step of ['missing-prompt', 'engagement', 'trust', 'influence', 'turnout']) {
+  for (const step of ['missing-prompt', 'engagement', 'trust', 'influence', 'listening-bridge']) {
     const next = act(previous, { type: 'next' });
     assert.deepEqual(next, { step, score: 8, answers: voteAnswers });
     assert.deepEqual(act(next, { type: 'back' }), previous);

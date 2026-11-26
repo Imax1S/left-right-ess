@@ -5,7 +5,7 @@ import type { HighlightFilter } from './highlights.ts';
 
 export type Answers = Readonly<Partial<Record<number, Choice>>>;
 type Progress = { score: Score; answers: Answers };
-const offArcSteps = ['missing-prompt', 'engagement', 'trust', 'influence', 'turnout'] as const;
+const offArcSteps = ['missing-prompt', 'engagement', 'trust', 'influence', 'listening-bridge'] as const;
 type ActTwoStep = (typeof offArcSteps)[number];
 
 export type Session =
@@ -60,7 +60,7 @@ export function createSessionReducer(questions: readonly string[], countries: re
           return { step: 'result', score, index: state.index, option: action.option, answers };
         }
         if (action.type === 'back') {
-          if (hasOffArc && state.index === vote + 1) return { step: 'turnout', score, answers: state.answers };
+          if (hasOffArc && state.index === vote + 1) return { step: 'listening-bridge', score, answers: state.answers };
           return state.index === 0
             ? { step: 'among', score, highlight: null }
             : { step: 'question', score, index: state.index - 1, answers: state.answers };
