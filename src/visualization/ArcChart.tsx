@@ -1,16 +1,13 @@
 import { useLayoutEffect, useMemo, useRef } from 'react';
 import type { CSSProperties, PointerEvent } from 'react';
-import { quadrantKeys, scores, sideOf, sides } from '../domain/model.ts';
+import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, offArcAnswerColumns, offArcLayout, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
-import { quadrantCells, quadrantLayout } from './quadrantLayout.ts';
-
-type QuadrantAnswers = { inequality?: Choice; migration?: Choice };
 
 interface Props {
   dots: Dot[];
@@ -18,23 +15,15 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
-  quadrant?: QuadrantAnswers;
-  offArc?: { share: number; answerShare?: number | null };
-  returningToArc?: QuadrantAnswers;
+  offArc?: { share: number; answerShare?: number | null; labels?: readonly [string, string] };
   understandingCircle?: { range: string | null };
   onPlace?: (score: Score) => void;
 }
 
-type MotionStyle = CSSProperties & {
-  '--delay'?: string; '--from-arc'?: string; '--through-columns'?: string; '--from-quadrant'?: string;
-};
+type MotionStyle = CSSProperties & { '--delay'?: string };
 
 function moveTo({ x, y }: Point) {
   return `translate(${x}px, ${y}px)`;
-}
-
-function throughColumns(from: Point, to: Point): MotionStyle {
-  return { '--from-arc': moveTo(from), '--through-columns': moveTo({ x: to.x, y: from.y }) };
 }
 
 export function RespondentShape({ side, radius }: { side: Side; radius: number }) {
@@ -53,7 +42,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, quadrant, offArc, returningToArc,
+export function ArcChart({ dots, score, highlightedIds, comparison, result, offArc,
   understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
@@ -76,31 +65,15 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
   const offArcIds = useMemo(
     () => Array.from({ length: offArcCount }, (_, index) => 'off-arc-' + index), [offArcCount],
   );
-  const offArcSpacing = Math.min(11, 300 / Math.max(1, offArcCount));
-  const offArcHighlighted = offArc?.answerShare === undefined ? offArcCount
-    : Math.round(offArcCount * (offArc.answerShare ?? 0) / 100);
+  const answerShare = offArc?.answerShare;
+  const offArcPoints = offArcLayout(offArcCount, answerShare);
+  const offArcHighlighted = answerShare == null ? offArcCount : Math.round(offArcCount * answerShare / 100);
   const circle = useMemo(() => inCircle ? circleLayout(dots, offArcIds) : null, [dots, inCircle, offArcIds]);
   const range = understandingCircle?.range;
-  const gridAnswers = quadrant ?? returningToArc;
-  const inequalityAnswer = gridAnswers?.inequality;
-  const migrationAnswer = gridAnswers?.migration;
-  const needsGrid = gridAnswers !== undefined;
-  const gridLayout = useMemo(
-    () => needsGrid ? quadrantLayout(dots, inequalityAnswer, migrationAnswer) : null,
-    [dots, needsGrid, inequalityAnswer, migrationAnswer],
-  );
-  const grid = quadrant ? gridLayout : null;
-  const exitGrid = returningToArc ? gridLayout : null;
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
-  const selected = circle?.marker ?? grid?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
+  const selected = circle?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = moveTo(selected);
-  const markerStyle: MotionStyle = {
-    transform: markerTransform,
-    opacity: grid && !grid.marker ? 0 : 1,
-    ...(grid?.marker && pointers ? throughColumns(pointers.marker, grid.marker) : {}),
-    ...(exitGrid?.marker ? { '--from-quadrant': moveTo(exitGrid.marker) } : {}),
-  };
   const captions = groups && (groups.middle
     ? [groups.bands[0], groups.middle, groups.bands[1]]
     : groups.bands);
@@ -110,7 +83,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
   ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
-  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}${returningToArc ? ' is-returning-to-arc' : ''}`;
+  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${circle ? ' is-understanding' : offArc ? ' is-off-arc' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
     left: `${pointers.start.x / viewBox.width * 100}%`,
@@ -171,21 +144,19 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
       ? (offArcCount ? 'The respondents from the arc, grey dots for those without a mark, and your marker form a circle.'
         : 'The same respondents and your marker form a circle.')
         + (range ? ' The weighted share who chose “More like me” ranges from ' + range + ' across the four groups.' : '')
-      : grid
-      ? 'Immigration answers run across the chart. Answers about reducing the income gap run up and down. Shapes identify each person’s starting political group.'
       : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
-        + (offArcCount ? ' Grey dots below the arc represent the weighted share without a mark.' : '')}>
+        + (offArcCount ? ' Grey dots inside the arc represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
-          <g className={groups || grid || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
+          <g className={groups || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
             {sides.map(side => <path key={side} className={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
-            {score !== null && <path className="score-band" d={scoreBand(score)} />}
-            {pointerLine && <path className="score-pointer" d={pointerLine} />}
+            {score !== null && !offArc && <path className="score-band" d={scoreBand(score)} />}
+            {pointerLine && !offArc && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
             <text className="arc-end" x="200" y="211">5</text>
             <text className="arc-end" x="332" y="211">10</text>
@@ -193,24 +164,6 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
           <g className={groups ? 'chart-layer' : 'chart-layer is-hidden'}>
             {groups?.bands.map(({ option, path }) =>
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
-          </g>
-          <g className={grid ? 'chart-layer quadrant-canvas' : 'chart-layer quadrant-canvas is-hidden'}>
-            <text x="210" y="12" className="quadrant-axis-title">Immigration</text>
-            <text x="14" y="134" transform="rotate(-90 14 134)" className="quadrant-axis-title">Income gap</text>
-            {(['reduceAllow', 'reduceLimit'] as const).map((key, index) => {
-              const { x, width } = quadrantCells[key];
-              return <text key={key} x={x + width / 2} y="28" className="quadrant-column">
-                {index === 0 ? 'Allow many / some' : 'Allow a few / none'}
-              </text>;
-            })}
-            {quadrantKeys.map((key, index) => {
-              const { x, y, width, height } = quadrantCells[key];
-              return <g key={key}>
-                <rect x={x} y={y} width={width} height={height} rx="9" />
-                <text x={x + 10} y={y + 19}>{index < 2 ? 'Reduce the income gap' : 'Oppose reducing the gap'}</text>
-              </g>;
-            })}
-            <path d="M 31 130 H 208 M 213 130 H 390" className="quadrant-neutral" />
           </g>
           <g className={circle ? 'chart-layer circle-canvas' : 'chart-layer circle-canvas is-hidden'}>
             <circle cx={circleCentre.x} cy={circleCentre.y} r="124" className="circle-outline" />
@@ -223,48 +176,41 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
           </g>
           {dots.map((person, index) => {
             const circlePoint = circle?.dots.get(person.id);
-            const gridPoint = grid?.dots.get(person.id);
-            const exitPoint = exitGrid?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
             const arcPoint = arcPositions.get(person.id)!;
-            const point = circlePoint ?? gridPoint ?? answerPoint ?? arcPoint;
+            const point = circlePoint ?? answerPoint ?? arcPoint;
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
             const opacity = circlePoint ? (result && person.answers.understanding !== 'a' ? 0.35 : 0.94)
-              : gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
               : offArc ? 0.38
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : sameScore ? 1 : 0.5;
-            const delay = gridPoint ? Math.round(arcPoint.x / viewBox.width * 120)
-              : groups || circle ? (index % 15) * 20 : 0;
             const style: MotionStyle = {
               transform: moveTo(point),
               opacity,
-              '--delay': delay + 'ms',
-              ...(gridPoint ? throughColumns(arcPoint, gridPoint) : {}),
-              ...(exitPoint ? { '--from-quadrant': moveTo(exitPoint) } : {}),
+              '--delay': groups || circle ? (index % 15) * 20 + 'ms' : '0ms',
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
-              data-same-score={sameScore && !grid && !circle ? 'true' : undefined}>
+              data-same-score={sameScore && !offArc && !circle ? 'true' : undefined}>
               <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
           {offArcIds.map((id, index) => {
-            const point = circle?.dots.get(id) ?? {
-              x: viewBox.width / 2 + (index - (offArcCount - 1) / 2) * offArcSpacing,
-              y: comparisonHeight - 20,
-              r: Math.min(4, offArcSpacing * 0.37),
-            };
+            const point = circle?.dots.get(id) ?? offArcPoints[index];
             const style: MotionStyle = {
-              transform: moveTo(point), opacity: index < offArcHighlighted ? 0.95 : 0.28,
+              transform: moveTo(point), opacity: index < offArcHighlighted ? 0.95 : 0.5,
               '--delay': circle ? index % 10 * 20 + 'ms' : '0ms',
             };
             return <g key={id} className="respondent off-arc-dot" style={style}><circle r={point.r} /></g>;
           })}
-          <g ref={markerRef} className="reader-marker" style={markerStyle}>
+          {!circle && answerShare != null && offArc?.labels?.map((label, index) =>
+            <text key={index} x={offArcAnswerColumns[index]} y="190" className="off-arc-plot-label">
+              {label}
+            </text>)}
+          <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
             <ReaderGlyph score={score} />
           </g>
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
@@ -287,8 +233,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
           ))}
         </div>}
       </div>
-      {!canPlace && !grid && !circle && score !== null && <figcaption className="arc-caption">
-        {offArcCount > 0 ? <span className="arc-omitted">Grey dots illustrate the weighted share without a mark.</span>
+      {!canPlace && !circle && score !== null && <figcaption className="arc-caption">
+        {offArcCount > 0 ? <span className="arc-omitted">The dots inside the arc represent people without a mark.</span>
           : <span className="arc-legend">People at your starting mark ({score})</span>}
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}

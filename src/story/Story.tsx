@@ -7,7 +7,7 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
   formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { OffArcAnswerDetails, offArcQuestions, QuadrantDetails, QuadrantGuide, QuadrantLegend,
+import { OffArcAnswerDetails, offArcQuestions,
   UnderstandingResult, understandingRange, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
@@ -23,7 +23,7 @@ function Fact({ value, caption }: { value: ReactNode; caption: string }) {
 }
 
 export function Story({ data, showMethod }: { data: StoryData; showMethod: boolean }) {
-  const hasActTwo = Boolean(data.disillusioned && data.quadrant);
+  const hasActTwo = Boolean(data.disillusioned);
   const reduce = useMemo(() => createSessionReducer(
     data.questions.map(question => question.id), data.countries.map(country => country.code), hasActTwo,
   ), [data, hasActTwo]);
@@ -32,24 +32,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const focusOnChange = useRef(false);
   const { step, score } = state;
   const actTwoScreen = isActTwoStep(step);
-  const chapterPrompt = step === 'axis-prompt' || step === 'missing-prompt';
   const offArcQuestion = step === 'trust' || step === 'influence' || step === 'turnout' ? offArcQuestions[step] : null;
-  const returningToArc = state.step === 'question' && Boolean(state.fromQuadrant);
-  const quadrantAnswers = (state.step === 'quadrant' || returningToArc) && 'answers' in state ? {
-    inequality: state.answers[data.questions.findIndex(question => question.id === 'inequality')],
-    migration: state.answers[data.questions.findIndex(question => question.id === 'migration')],
-  } : undefined;
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
   const voteQuestion = hasActTwo && question?.id === 'vote';
-  const axisScreen = step === 'axis-prompt' || step === 'quadrant';
-  const votingIndex = data.questions.findIndex(item => item.id === 'vote');
-  const axisSequence = hasActTwo && (axisScreen || voteQuestion || step === 'missing-prompt' ||
-    (index >= 0 && index === votingIndex - 1));
-  const axes = axisScreen ? {
-    migration: data.questions.find(item => item.id === 'migration')?.prompt ?? '',
-    inequality: data.questions.find(item => item.id === 'inequality')?.prompt ?? '',
-  } : null;
   const comparisonLayout = question !== null || actTwoScreen;
   const result = state.step === 'result' && question ? {
     question,
@@ -58,6 +44,8 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } : null;
   const closingQuestion = hasActTwo && question?.id === 'understanding';
   const closingCircle = closingQuestion && result !== null;
+  const showVotingCards = voteQuestion || step === 'missing-prompt';
+  const hasVotingCardSlot = showVotingCards || actTwoScreen || closingQuestion;
   const palette = isOffArcStep(step) ? ' is-monochrome'
     : closingCircle ? ' is-closing-result' : closingQuestion ? ' is-closing-question' : '';
   const understandingCircle = closingCircle ? {
@@ -68,6 +56,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     share: outside.unplacedSharePercent,
     answerShare: offArcQuestion ? outside.groups.unplaced[offArcQuestion.field]
       : closingCircle ? outside.groups.unplaced.understandingPercent : undefined,
+    labels: offArcQuestion?.shortAnswers,
   } : undefined;
   const highlight = state.step === 'among' ? state.highlight : null;
   const matches = highlight
@@ -79,11 +68,11 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     if (showMethod || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
     if (step !== 'result' || closingCircle) {
-      const animateScroll = (step === 'axis-prompt' || step === 'quadrant' || returningToArc) &&
+      const animateScroll = step === 'engagement' &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: animateScroll ? 'smooth' : 'instant' });
     }
-  }, [step, index, showMethod, closingCircle, returningToArc]);
+  }, [step, index, showMethod, closingCircle]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
     focusOnChange.current = true;
@@ -104,7 +93,6 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   let heading: ReactNode;
   let cards: ReactNode;
   let controls: ReactNode;
-  let chartNote: ReactNode;
   const next = () => navigate({ type: 'next' });
   if (state.step === 'scale') {
     heading = <>Where do <mark>you</mark> place yourself?</>;
@@ -143,19 +131,13 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
         ? 'You voted. Some people didn’t. And some people didn’t even answer the question we started with.'
         : 'You answered no. Some people didn’t give an answer to our first question at all.') : undefined}
       continueLabel={final ? 'See the takeaway' : voteQuestion ? 'Continue' : 'Next question'} onContinue={next} />;
-  } else if (chapterPrompt) {
-    heading = step === 'axis-prompt' ? 'What if we add a second axis?' : 'Could we be missing anyone?';
-    controls = <div className="act-two-panel">
-      {axes && <>
-        <p>Let’s put two earlier answers on the same chart. We can see who agrees on one issue and differs on the other.</p>
-        <QuadrantGuide {...axes} />
-      </>}
-      <YesControl onYes={next} />
-    </div>;
+  } else if (state.step === 'missing-prompt') {
+    heading = 'Could we be missing anyone?';
+    controls = <YesControl onYes={next} />;
   } else if (state.step === 'engagement' && data.disillusioned) {
     heading = 'They were outside the scale.';
-    chartNote = <UnplacedShare data={data.disillusioned} />;
     controls = <div className="act-two-panel">
+      <UnplacedShare data={data.disillusioned} />
       <p>We know how they answered other questions. Let’s start with trust in parliament.</p>
       <p className="act-note">The reasons for leaving the scale blank are unknown.</p>
       <Continue onClick={next}>Look at trust</Continue>
@@ -163,21 +145,16 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (offArcQuestion && data.disillusioned) {
     heading = offArcQuestion.prompt;
     controls = <OffArcAnswerDetails question={offArcQuestion} data={data.disillusioned} onContinue={next} />;
-  } else if (state.step === 'quadrant' && data.quadrant && axes) {
-    heading = 'Two answers. Four corners.';
-    chartNote = <QuadrantLegend />;
-    controls = <QuadrantDetails data={data.quadrant} axes={axes} onContinue={next} />;
   }
 
-  if (axisSequence || (question && !closingQuestion)) {
-    const count = index >= 0 ? index + 1 : axisScreen ? votingIndex : votingIndex + 1;
+  if (question && !hasVotingCardSlot) {
     cards = <>
-      <Fact value={count} caption={`Of ${data.questions.length} questions`} />
-      <Fact value={axisScreen ? 'Income & migration' : question?.topic ?? 'Voting'} caption="Topic" />
+      <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
+      <Fact value={question.topic} caption="Topic" />
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion || voteQuestion ? ' step-act-two' : ''}${axisSequence ? ' is-axis-sequence' : ''}${returningToArc ? ' step-voting' : ''}${palette}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${hasVotingCardSlot ? ' step-act-two' : ''}${palette}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -190,15 +167,20 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
       <div className="story-visual">
-        {cards && <div className="facts">{cards}</div>}
+        {hasVotingCardSlot
+          ? <div className={showVotingCards ? 'voting-cards is-visible' : 'voting-cards'} aria-hidden={!showVotingCards}>
+            <div><div className="facts">
+              <Fact value={data.questions.findIndex(item => item.id === 'vote') + 1}
+                caption={`Of ${data.questions.length} questions`} />
+              <Fact value="Voting" caption="Topic" />
+            </div></div>
+          </div>
+          : cards && <div className="facts">{cards}</div>}
         <div className="story-plot">
           <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
-            comparison={comparisonLayout} result={result}
-            quadrant={step === 'quadrant' ? quadrantAnswers : undefined} offArc={offArc}
-            returningToArc={returningToArc ? quadrantAnswers : undefined}
+            comparison={comparisonLayout} result={result} offArc={offArc}
             understandingCircle={understandingCircle} onPlace={step === 'scale' ? place : undefined} />
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
-          {chartNote}
         </div>
       </div>
       <div className="story-controls">{controls}</div>
@@ -229,7 +211,7 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const understanding = data.questions.find(question => question.id === 'understanding');
   const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
   const offArcSharedValue = (data.disillusioned?.groups.unplaced.understandingPercent ?? 0) > 50;
-  return <main hidden={hidden} className={data.disillusioned && data.quadrant
+  return <main hidden={hidden} className={data.disillusioned
     ? 'story-page conclusion-page is-closing-result' : 'story-page conclusion-page'}>
     <header className="story-header">
       <Wordmark />

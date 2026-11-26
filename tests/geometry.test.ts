@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { arcLayout, answerLayout, circleLayout, comparisonHeight, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
+import { arcLayout, answerLayout, circleLayout, comparisonHeight, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
-import { quadrantLayout } from '../src/visualization/quadrantLayout.ts';
 
 function question(id: string, neutral?: string) {
   return { id, options: { a: 'Agree', neutral, b: 'Disagree' } };
@@ -25,20 +24,23 @@ test('the closing circle retains every original dot and leaves space for the rea
   assert.equal(occupied.size, dots.length + offArc.length);
 });
 
-test('the four corners retain the sample and place neutral answers between the two rows', () => {
-  const dots = [
-    { id: '1', country: 'EE', score: 1, answers: { inequality: 'a', migration: 'a' } },
-    { id: '2', country: 'EE', score: 8, answers: { inequality: 'b', migration: 'b' } },
-    { id: '3', country: 'EE', score: 5, answers: { inequality: 'neutral', migration: 'a' } },
-    { id: '4', country: 'EE', score: 8, answers: { inequality: 'missing', migration: 'a' } },
-  ] as const;
-  const layout = quadrantLayout(dots, 'neutral', 'a');
-  const [upper, lower, neutral, missing] = dots.map(dot => layout.dots.get(dot.id)!);
-  assert.equal(layout.dots.size, dots.length);
-  assert.ok(upper.x < 200 && lower.x > 200);
-  assert.ok(upper.y < neutral.y && neutral.y < lower.y && lower.y < missing.y);
-  assert.ok(Math.abs(layout.marker!.y - neutral.y) < 9);
-  assert.ok(Math.abs(layout.marker!.x - neutral.x) >= neutral.r + 19);
+test('the symbolic off-arc dots split by answer inside the hollow and keep their count', () => {
+  const together = offArcLayout(14);
+  assert.equal(together.length, 14);
+  const meanX = together.reduce((sum, dot) => sum + dot.x, 0) / together.length;
+  assert.ok(Math.abs(meanX - 200) < 1e-6);
+  const split = offArcLayout(14, 59.8);
+  assert.equal(split.length, 14);
+  assert.equal(split.filter(dot => dot.x < 200).length, 8);
+  assert.equal(split.filter(dot => dot.x > 200).length, 6);
+  for (const group of [together, split, offArcLayout(100, 100), offArcLayout(100, 0)]) {
+    for (const [index, dot] of group.entries()) {
+      assert.ok(Math.hypot(dot.x - 200, dot.y - 190) + dot.r < 73);
+      for (const previous of group.slice(0, index)) {
+        assert.ok(Math.hypot(dot.x - previous.x, dot.y - previous.y) >= dot.r + previous.r);
+      }
+    }
+  }
 });
 
 test('arc and all answer bands keep people in bounds without overlap', () => {

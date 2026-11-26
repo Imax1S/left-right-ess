@@ -1,5 +1,5 @@
-import { quadrantKeys, sides } from '../domain/model.ts';
-import type { DisillusionedSummary, QuadrantSummary } from '../domain/model.ts';
+import { sides } from '../domain/model.ts';
+import type { DisillusionedSummary } from '../domain/model.ts';
 import { Continue, formatShare, integer } from './controls.tsx';
 import './actTwo.css';
 
@@ -22,18 +22,21 @@ export const offArcQuestions = {
     prompt: 'How much do you trust your country’s parliament?',
     field: 'lowTrustPercent',
     answers: ['Low trust (0–4)', 'Trust rating of 5–10'],
+    shortAnswers: ['Low trust', '5–10'],
     next: 'Look at political influence',
   },
   influence: {
     prompt: 'How much say do people like you have in what the government does?',
     field: 'noSayPercent',
     answers: ['Little or no say', 'Some say or more'],
+    shortAnswers: ['Little or no say', 'Some or more'],
     next: 'Look at voting',
   },
   turnout: {
     prompt: 'Did you vote in the last national election?',
     field: 'votedPercent',
     answers: ['Voted', 'Did not vote'],
+    shortAnswers: ['Voted', 'Did not vote'],
     next: 'One last question',
   },
 } as const;
@@ -62,54 +65,6 @@ export function OffArcAnswerDetails({ question, data, onContinue }: {
     {question.field === 'votedPercent' && <p>{(data.groups.unplaced.noSayPercent ?? 0) > 50 &&
       'Many said they had little or no say in politics. '}There’s one last question we can ask everyone.</p>}
     <Continue onClick={onContinue}>{question.next}</Continue>
-  </div>;
-}
-
-const combinations = {
-  reduceAllow: ['Reduce the gap', 'Allow many / some'],
-  reduceLimit: ['Reduce the gap', 'Allow a few / none'],
-  opposeAllow: ['Oppose reducing', 'Allow many / some'],
-  opposeLimit: ['Oppose reducing', 'Allow a few / none'],
-} as const;
-
-export function QuadrantLegend() {
-  return <div className="quadrant-legend">
-    <span className="left">Left</span><span className="centre">Centre (5)</span><span className="right">Right</span>
-  </div>;
-}
-
-type AxisQuestions = { migration: string; inequality: string };
-
-export function QuadrantGuide({ migration, inequality }: AxisQuestions) {
-  return <dl className="quadrant-guide" aria-label="Questions on each axis">
-    <div><dt>Across · Immigration</dt><dd>{migration}</dd></div>
-    <div><dt>Up and down · Income gap</dt><dd>{inequality}</dd></div>
-  </dl>;
-}
-
-export function QuadrantDetails({ data, axes, onContinue }: {
-  data: QuadrantSummary; axes: AxisQuestions; onContinue: () => void;
-}) {
-  const mixedCorners = quadrantKeys.every(key => sides.filter(side => (data.byGroup[side][key] ?? 0) > 0).length > 1);
-  return <div className="act-two-panel">
-    <p>{mixedCorners
-      ? 'People from different starting groups still share every corner.'
-      : 'The same people are now grouped by their answers on income and immigration.'}</p>
-    <QuadrantGuide {...axes} />
-    <p className="act-note">Immigration answers set the column. People who agreed to reduce the income gap go above the dotted line, people who disagreed go below, and middle answers stay between the two rows.</p>
-    <details className="result-details quadrant-numbers">
-      <summary>See the numbers</summary>
-      <table className="act-table quadrant-table">
-        <thead><tr><th scope="col">Answer combination</th>{sides.map(side =>
-          <th key={side} scope="col" className={side}>{side === 'centre' ? 'Centre' : groupLabels[side]}</th>)}</tr></thead>
-        <tbody>{quadrantKeys.map(key => <tr key={key}>
-          <th scope="row"><b>{combinations[key][0]}</b><small>{combinations[key][1]}</small></th>
-          {sides.map(side => <td key={side} className={side}>{formatShare(data.byGroup[side][key])}</td>)}
-        </tr>)}</tbody>
-      </table>
-      <p className="act-note">Dots without both answers sit below the grid. The table uses survey weights for {integer.format(data.totalCount)} people whose answers fit one of the four corners.</p>
-    </details>
-    <Continue onClick={onContinue}>Continue</Continue>
   </div>;
 }
 

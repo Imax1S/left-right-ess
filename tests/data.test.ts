@@ -61,11 +61,10 @@ test('rejects a dot count too small to show every configured country', async () 
   }), /dotCount must be at least 2/);
 });
 
-test('the second act keeps unplaced people out of the arc and uses complete directional answers for the grid', async () => {
+test('the second act keeps unplaced people out of the original arc sample', async () => {
   const data = await prepareStory(await ess11Source(), config);
   const engagement = data.disillusioned;
-  const quadrant = data.quadrant;
-  assert.ok(engagement && quadrant);
+  assert.ok(engagement);
   assert.equal(engagement.eligibleTotalCount, data.eligibleCount + engagement.unplacedCount);
   assert.equal(engagement.unplacedSharePercent.toFixed(1), '11.9');
   assert.equal(engagement.groups.unplaced.votedPercent?.toFixed(1), '52.8');
@@ -74,8 +73,5 @@ test('the second act keeps unplaced people out of the arc and uses complete dire
   assert.equal(engagement.groups.left.understandingPercent?.toFixed(1), '91.1');
   assert.ok(engagement.groups.unplaced.noSayPercent! > engagement.groups.centre.noSayPercent!);
   assert.ok(engagement.groups.centre.votedPercent! < engagement.groups.right.votedPercent!);
-  const rights = Object.values(quadrant.byGroup.right);
-  assert.ok(rights.every(value => value !== null && value > 10));
-  assert.ok(Math.abs(rights.reduce<number>((sum, value) => sum + (value ?? 0), 0) - 100) < 1e-9);
   assert.equal(data.dots.length, 100);
 });

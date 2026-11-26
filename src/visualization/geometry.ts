@@ -14,6 +14,35 @@ const readerClearance = 21;
 export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
 
+export const offArcCentre: Point = { x: origin.x, y: 163 };
+export const offArcAnswerColumns = [168, 232] as const;
+
+function dotCluster(count: number, x: number, width: number) {
+  if (!count) return [];
+  const height = 30;
+  const columns = Math.min(count, Math.ceil(Math.sqrt(count * width / height)));
+  const rows = Math.ceil(count / columns);
+  const pitch = Math.min(11, width / columns, height / rows);
+  return Array.from({ length: count }, (_, index) => {
+    const row = Math.floor(index / columns);
+    const rowSize = Math.min(columns, count - row * columns);
+    return {
+      x: x + (index % columns - (rowSize - 1) / 2) * pitch,
+      y: offArcCentre.y + (row - (rows - 1) / 2) * pitch,
+      r: Math.min(4.4, pitch * 0.44),
+    };
+  });
+}
+
+export function offArcLayout(count: number, answerShare?: number | null) {
+  if (answerShare == null) return dotCluster(count, offArcCentre.x, 56);
+  const first = Math.round(count * answerShare / 100);
+  return [
+    ...dotCluster(first, offArcAnswerColumns[0], 42),
+    ...dotCluster(count - first, offArcAnswerColumns[1], 42),
+  ];
+}
+
 export function circleLayout(dots: readonly Dot[], offArcIds: readonly string[] = []) {
   const marker = { x: circleCentre.x + 105, y: circleCentre.y };
   const gap = 0.3;

@@ -62,18 +62,12 @@ test('each selection replaces the previous filter, including country', () => {
   assert.deepEqual(reduce(question, { type: 'back' }), among);
 });
 
-test('the quadrants lead to voting before the off-arc reveal', () => {
+test('voting leads directly into the off-arc interlude and the final question', () => {
   const act = createSessionReducer(['inequality', 'migration', 'adoption', 'climate', 'vote', 'understanding'], [], true);
   const climate = { step: 'result', score: 8, index: 3, option: 'b', answers: { 0: 'neutral', 1: 'a', 3: 'b' } } as const;
-  const axis = act(climate, { type: 'next' });
-  assert.deepEqual(axis, { step: 'axis-prompt', score: 8, answers: climate.answers });
-  assert.deepEqual(act(axis, { type: 'back' }), climate);
-  const quadrant = act(axis, { type: 'next' });
-  assert.deepEqual(quadrant, { step: 'quadrant', score: 8, answers: climate.answers });
-  assert.deepEqual(act(quadrant, { type: 'back' }), axis);
-  const voting = act(quadrant, { type: 'next' });
-  assert.deepEqual(voting, { step: 'question', score: 8, index: 4, answers: climate.answers, fromQuadrant: true });
-  assert.deepEqual(act(voting, { type: 'back' }), quadrant);
+  const voting = act(climate, { type: 'next' });
+  assert.deepEqual(voting, { step: 'question', score: 8, index: 4, answers: climate.answers });
+  assert.deepEqual(act(voting, { type: 'back' }), { step: 'question', score: 8, index: 3, answers: climate.answers });
   const vote = act(voting, { type: 'answer', option: 'b' });
   const voteAnswers = { ...climate.answers, 4: 'b' };
   let previous: ReturnType<typeof act> = vote;

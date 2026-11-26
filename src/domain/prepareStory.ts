@@ -2,7 +2,7 @@ import { choices, sideOf, sides } from './model.ts';
 import type { Choice, Question, Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
 import { summarizeResponsePatterns } from './responsePatterns.ts';
 import { sampleRespondents } from './sample.ts';
-import { summarizeEngagement, summarizeQuadrants } from './actTwo.ts';
+import { summarizeEngagement } from './actTwo.ts';
 
 function weightedAssociation(rows: readonly (readonly number[])[]) {
   const columnWeights = choices.map((_, i) => rows.reduce((sum, row) => sum + row[i], 0));
@@ -61,14 +61,14 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
   const { source, countries, questions, people, unplaced } = await adapter.load(config);
   if (!people.length) throw new Error('The selected countries have no eligible respondents');
   const compared = questions.map(question => ({ ...question, ...summarize(people, question) }));
-  const actTwo = ['inequality', 'migration', 'vote', 'understanding'].every(id => config.questions.includes(id));
+  const vote = config.questions.indexOf('vote');
+  const actTwo = vote >= 0 && config.questions.indexOf('understanding') > vote;
   return {
     source,
     countries,
     questions: compared,
     responsePatterns: summarizeResponsePatterns(people, compared),
     disillusioned: actTwo && unplaced ? summarizeEngagement(people, unplaced) : null,
-    quadrant: actTwo ? summarizeQuadrants(people) : null,
     eligibleCount: people.length,
     dots: sampleRespondents(people, countries, config.dotCount),
   };

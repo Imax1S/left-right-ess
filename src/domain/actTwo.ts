@@ -1,6 +1,5 @@
-import { quadrantKeys, sideOf } from './model.ts';
-import type { Answer, DisillusionedSummary, EngagementFlags, EngagementTallies, QuadrantKey,
-  QuadrantSummary, Respondent } from './model.ts';
+import { sideOf } from './model.ts';
+import type { DisillusionedSummary, EngagementFlags, EngagementTallies, Respondent } from './model.ts';
 
 export function emptyEngagement(): EngagementTallies {
   return {
@@ -55,36 +54,5 @@ export function summarizeEngagement(people: readonly Respondent[], unplaced: Eng
     groups: {
       left: shares(totals.left), centre: shares(totals.centre), right: shares(totals.right), unplaced: shares(unplaced),
     },
-  };
-}
-
-export function quadrantFor(inequality?: Answer, migration?: Answer): QuadrantKey | null {
-  if (migration !== 'a' && migration !== 'b') return null;
-  if (inequality === 'a') return migration === 'a' ? 'reduceAllow' : 'reduceLimit';
-  if (inequality === 'b') return migration === 'a' ? 'opposeAllow' : 'opposeLimit';
-  return null;
-}
-
-export function summarizeQuadrants(people: readonly Respondent[]): QuadrantSummary | null {
-  const empty = () => ({ reduceAllow: 0, reduceLimit: 0, opposeAllow: 0, opposeLimit: 0 });
-  const totals = { left: empty(), centre: empty(), right: empty() };
-  let totalCount = 0;
-  for (const person of people) {
-    const key = quadrantFor(person.answers.inequality, person.answers.migration);
-    if (!key) continue;
-    totals[sideOf(person.score)][key] += person.weight;
-    totalCount++;
-  }
-  if (!totalCount) return null;
-  const shares = (group: ReturnType<typeof empty>) => {
-    const total = quadrantKeys.reduce((sum, key) => sum + group[key], 0);
-    return {
-      reduceAllow: percent(group.reduceAllow, total), reduceLimit: percent(group.reduceLimit, total),
-      opposeAllow: percent(group.opposeAllow, total), opposeLimit: percent(group.opposeLimit, total),
-    };
-  };
-  return {
-    totalCount,
-    byGroup: { left: shares(totals.left), centre: shares(totals.centre), right: shares(totals.right) },
   };
 }

@@ -83,15 +83,6 @@ export interface DisillusionedSummary {
   groups: Record<Side | 'unplaced', GroupEngagement>;
 }
 
-export const quadrantKeys = ['reduceAllow', 'reduceLimit', 'opposeAllow', 'opposeLimit'] as const;
-export type QuadrantKey = (typeof quadrantKeys)[number];
-type QuadrantShares = Record<QuadrantKey, number | null>;
-
-export interface QuadrantSummary {
-  totalCount: number;
-  byGroup: Record<Side, QuadrantShares>;
-}
-
 export interface Respondent {
   id: string;
   country: string;
@@ -147,6 +138,5 @@ export interface StoryData {
   questions: StoryQuestion[];
   responsePatterns: ResponsePatterns | null;
   disillusioned: DisillusionedSummary | null;
-  quadrant: QuadrantSummary | null;
   dots: Dot[];
 }
