@@ -7,7 +7,7 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
   formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { OffArcAnswerDetails, offArcQuestions, QuadrantDetails, QuadrantLegend,
+import { OffArcAnswerDetails, offArcQuestions, QuadrantDetails, QuadrantGuide, QuadrantLegend,
   UnderstandingResult, understandingRange, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
@@ -42,6 +42,14 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
   const voteQuestion = hasActTwo && question?.id === 'vote';
+  const axisScreen = step === 'axis-prompt' || step === 'quadrant';
+  const votingIndex = data.questions.findIndex(item => item.id === 'vote');
+  const axisSequence = hasActTwo && (axisScreen || voteQuestion || step === 'missing-prompt' ||
+    (index >= 0 && index === votingIndex - 1));
+  const axes = axisScreen ? {
+    migration: data.questions.find(item => item.id === 'migration')?.prompt ?? '',
+    inequality: data.questions.find(item => item.id === 'inequality')?.prompt ?? '',
+  } : null;
   const comparisonLayout = question !== null || actTwoScreen;
   const result = state.step === 'result' && question ? {
     question,
@@ -71,7 +79,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     if (showMethod || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
     if (step !== 'result' || closingCircle) {
-      const animateScroll = (step === 'quadrant' || returningToArc) &&
+      const animateScroll = (step === 'axis-prompt' || step === 'quadrant' || returningToArc) &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: animateScroll ? 'smooth' : 'instant' });
     }
@@ -138,7 +146,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (chapterPrompt) {
     heading = step === 'axis-prompt' ? 'What if we add a second axis?' : 'Could we be missing anyone?';
     controls = <div className="act-two-panel">
-      {step === 'axis-prompt' && <p>So far, we’ve looked at one answer at a time.</p>}
+      {axes && <>
+        <p>Let’s put two earlier answers on the same chart. We can see who agrees on one issue and differs on the other.</p>
+        <QuadrantGuide {...axes} />
+      </>}
       <YesControl onYes={next} />
     </div>;
   } else if (state.step === 'engagement' && data.disillusioned) {
@@ -152,20 +163,21 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (offArcQuestion && data.disillusioned) {
     heading = offArcQuestion.prompt;
     controls = <OffArcAnswerDetails question={offArcQuestion} data={data.disillusioned} onContinue={next} />;
-  } else if (state.step === 'quadrant' && data.quadrant) {
+  } else if (state.step === 'quadrant' && data.quadrant && axes) {
     heading = 'Two answers. Four corners.';
     chartNote = <QuadrantLegend />;
-    controls = <QuadrantDetails data={data.quadrant} onContinue={next} />;
+    controls = <QuadrantDetails data={data.quadrant} axes={axes} onContinue={next} />;
   }
 
-  if (question && !closingQuestion && !voteQuestion) {
+  if (axisSequence || (question && !closingQuestion)) {
+    const count = index >= 0 ? index + 1 : axisScreen ? votingIndex : votingIndex + 1;
     cards = <>
-      <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
-      <Fact value={question.topic} caption="Topic" />
+      <Fact value={count} caption={`Of ${data.questions.length} questions`} />
+      <Fact value={axisScreen ? 'Income & migration' : question?.topic ?? 'Voting'} caption="Topic" />
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion || voteQuestion ? ' step-act-two' : ''}${returningToArc ? ' step-voting' : ''}${palette}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion || voteQuestion ? ' step-act-two' : ''}${axisSequence ? ' is-axis-sequence' : ''}${returningToArc ? ' step-voting' : ''}${palette}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />

@@ -7,17 +7,17 @@ interface Box extends Point { width: number; height: number }
 type Zone = QuadrantKey | 'neutralAllow' | 'neutralLimit' | 'missing';
 
 export const quadrantCells = Object.fromEntries(quadrantKeys.map((key, index) => [key, {
-  x: index % 2 === 0 ? 10 : 204,
-  y: index < 2 ? 26 : 147,
-  width: 186,
-  height: 87,
+  x: index % 2 === 0 ? 31 : 213,
+  y: index < 2 ? 36 : 147,
+  width: 177,
+  height: index < 2 ? 77 : 87,
 }])) as Record<QuadrantKey, Box>;
 
 const zones: Record<Zone, Box> = {
   ...quadrantCells,
-  neutralAllow: { x: 10, y: 114, width: 186, height: 32 },
-  neutralLimit: { x: 204, y: 114, width: 186, height: 32 },
-  missing: { x: 10, y: 235, width: 380, height: 28 },
+  neutralAllow: { ...quadrantCells.reduceAllow, y: 114, height: 32 },
+  neutralLimit: { ...quadrantCells.reduceLimit, y: 114, height: 32 },
+  missing: { x: 31, y: 235, width: 359, height: 28 },
 };
 
 function zone(inequality?: Answer, migration?: Answer): Zone {

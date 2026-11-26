@@ -78,12 +78,25 @@ export function QuadrantLegend() {
   </div>;
 }
 
-export function QuadrantDetails({ data, onContinue }: { data: QuadrantSummary; onContinue: () => void }) {
+type AxisQuestions = { migration: string; inequality: string };
+
+export function QuadrantGuide({ migration, inequality }: AxisQuestions) {
+  return <dl className="quadrant-guide" aria-label="Questions on each axis">
+    <div><dt>Across · Immigration</dt><dd>{migration}</dd></div>
+    <div><dt>Up and down · Income gap</dt><dd>{inequality}</dd></div>
+  </dl>;
+}
+
+export function QuadrantDetails({ data, axes, onContinue }: {
+  data: QuadrantSummary; axes: AxisQuestions; onContinue: () => void;
+}) {
   const mixedCorners = quadrantKeys.every(key => sides.filter(side => (data.byGroup[side][key] ?? 0) > 0).length > 1);
   return <div className="act-two-panel">
     <p>{mixedCorners
       ? 'People from different starting groups still share every corner.'
       : 'The same people are now grouped by their answers on income and immigration.'}</p>
+    <QuadrantGuide {...axes} />
+    <p className="act-note">Immigration answers set the column. People who agreed to reduce the income gap go above the dotted line, people who disagreed go below, and middle answers stay between the two rows.</p>
     <details className="result-details quadrant-numbers">
       <summary>See the numbers</summary>
       <table className="act-table quadrant-table">
@@ -94,7 +107,7 @@ export function QuadrantDetails({ data, onContinue }: { data: QuadrantSummary; o
           {sides.map(side => <td key={side} className={side}>{formatShare(data.byGroup[side][key])}</td>)}
         </tr>)}</tbody>
       </table>
-      <p className="act-note">Middle answers on income sit between the rows. Dots without both answers sit below. The table uses survey weights for {integer.format(data.totalCount)} people whose answers fit one of the four corners.</p>
+      <p className="act-note">Dots without both answers sit below the grid. The table uses survey weights for {integer.format(data.totalCount)} people whose answers fit one of the four corners.</p>
     </details>
     <Continue onClick={onContinue}>Continue</Continue>
   </div>;

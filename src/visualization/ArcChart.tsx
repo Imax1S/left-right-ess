@@ -172,7 +172,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
         : 'The same respondents and your marker form a circle.')
         + (range ? ' The weighted share who chose “More like me” ranges from ' + range + ' across the four groups.' : '')
       : grid
-      ? 'The same respondents grouped by answers about income and immigration. Shapes identify their starting political groups.'
+      ? 'Immigration answers run across the chart. Answers about reducing the income gap run up and down. Shapes identify each person’s starting political group.'
       : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
@@ -195,8 +195,14 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
           <g className={grid ? 'chart-layer quadrant-canvas' : 'chart-layer quadrant-canvas is-hidden'}>
-            <text x="103" y="16" className="quadrant-column">Allow many / some</text>
-            <text x="297" y="16" className="quadrant-column">Allow a few / none</text>
+            <text x="210" y="12" className="quadrant-axis-title">Immigration</text>
+            <text x="14" y="134" transform="rotate(-90 14 134)" className="quadrant-axis-title">Income gap</text>
+            {(['reduceAllow', 'reduceLimit'] as const).map((key, index) => {
+              const { x, width } = quadrantCells[key];
+              return <text key={key} x={x + width / 2} y="28" className="quadrant-column">
+                {index === 0 ? 'Allow many / some' : 'Allow a few / none'}
+              </text>;
+            })}
             {quadrantKeys.map((key, index) => {
               const { x, y, width, height } = quadrantCells[key];
               return <g key={key}>
@@ -204,7 +210,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
                 <text x={x + 10} y={y + 19}>{index < 2 ? 'Reduce the income gap' : 'Oppose reducing the gap'}</text>
               </g>;
             })}
-            <path d="M 10 130 H 196 M 204 130 H 390" className="quadrant-neutral" />
+            <path d="M 31 130 H 208 M 213 130 H 390" className="quadrant-neutral" />
           </g>
           <g className={circle ? 'chart-layer circle-canvas' : 'chart-layer circle-canvas is-hidden'}>
             <circle cx={circleCentre.x} cy={circleCentre.y} r="124" className="circle-outline" />
