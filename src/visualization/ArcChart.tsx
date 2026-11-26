@@ -182,7 +182,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
-            const opacity = circlePoint ? (result && person.answers.understanding !== 'a' ? 0.35 : 0.94)
+            const opacity = circlePoint ? (person.answers.understanding === 'a' ? 0.94 : 0.35)
               : offArc ? 0.38
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27

@@ -468,11 +468,11 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .conclusion-dots i.is-match { background: var(--reader-orange); }
 .conclusion-details summary { width: fit-content; padding-block: 4px; color: var(--muted); cursor: pointer; font-size: 14px; font-weight: 850; }
 .conclusion-details section { margin-top: 18px; }
-.conclusion-page section h2, .conclusion-card h3 {
+.conclusion-context h2, .conclusion-details h2, .conclusion-card h3 {
   font-family: var(--display);
   letter-spacing: -0.035em;
 }
-.conclusion-page section h2 { font-size: clamp(16px, 4.5vw, 24px); }
+.conclusion-context h2, .conclusion-details h2 { font-size: clamp(16px, 4.5vw, 24px); }
 .conclusion-intro { margin-top: 8px; color: var(--muted); font-size: clamp(13px, 3.3vw, 16px); }
 .conclusion-cards { display: grid; gap: 12px; margin-top: 14px; }
 .conclusion-card {

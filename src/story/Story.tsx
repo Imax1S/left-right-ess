@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useReducer, useRef } from 'react';
-import type { ReactNode, Ref } from 'react';
+import type { ReactNode } from 'react';
 import { sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts';
 import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
@@ -33,7 +33,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const { step, score } = state;
   const actTwoScreen = isActTwoStep(step);
   const offArcQuestion = step === 'trust' || step === 'influence' ? offArcQuestions[step] : null;
-  const index = 'index' in state ? state.index : -1;
+  const index = 'index' in state ? state.index : step === 'conclusion' ? data.questions.length - 1 : -1;
   const question = index >= 0 ? data.questions[index] : null;
   const voteQuestion = hasActTwo && question?.id === 'vote';
   const comparisonLayout = question !== null || actTwoScreen;
@@ -43,7 +43,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     alignment: answerAlignment(question.stats, state.option, state.score),
   } : null;
   const closingQuestion = hasActTwo && question?.id === 'understanding';
-  const closingCircle = closingQuestion && result !== null;
+  const closingCircle = closingQuestion && (result !== null || step === 'conclusion');
   const showVotingCards = voteQuestion || step === 'missing-prompt';
   const hasVotingCardSlot = showVotingCards || actTwoScreen || closingQuestion;
   const palette = isOffArcStep(step) ? ' is-monochrome'
@@ -86,9 +86,21 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     navigator.vibrate?.(10);
   }
 
-  if (state.step === 'conclusion') {
-    return <Conclusion data={data} score={state.score} answers={state.answers} headingRef={headingRef} hidden={showMethod}
-      onBack={() => navigate({ type: 'back' })} onRestart={() => navigate({ type: 'restart' })} />;
+  const takeawayHeading = <>A label tells <mark>part</mark> of the story.</>;
+  const takeaway = state.step === 'conclusion' && <Takeaway data={data} score={state.score} answers={state.answers}
+    openingHeading={closingCircle ? undefined : <h1 id="story-heading" tabIndex={-1} ref={headingRef}
+      className="story-heading">{takeawayHeading}</h1>}
+    onRestart={() => navigate({ type: 'restart' })} />;
+  if (state.step === 'conclusion' && !closingCircle) {
+    return <main hidden={showMethod} className={hasActTwo
+      ? 'story-page conclusion-page is-closing-result' : 'story-page conclusion-page'}>
+      <header className="story-header">
+        <Wordmark />
+        <button className="back-button" onClick={() => navigate({ type: 'back' })}><Arrow back /> Back</button>
+      </header>
+      {takeaway}
+      <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>
+    </main>;
   }
 
   let heading: ReactNode;
@@ -117,6 +129,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (state.step === 'question' && question) {
     heading = question.prompt;
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
+  } else if (step === 'conclusion') {
+    heading = takeawayHeading;
+    controls = takeaway;
   } else if (closingCircle && result && data.disillusioned) {
     heading = 'Understanding is common ground.';
     controls = <UnderstandingResult data={data.disillusioned} answer={result.question.options[result.choice] ?? ''}
@@ -169,7 +184,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
           {(step === 'among' || question || actTwoScreen) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
             <Arrow back /> Back
           </button>}
-          <span>{actTwoScreen ? 'Act 2' : index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>
+          {step !== 'conclusion' && <span>{actTwoScreen ? 'Act 2' : index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>}
         </div>
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
@@ -205,9 +220,9 @@ function AnswerShares({ question, choice }: { question: StoryQuestion; choice: C
   </dl>;
 }
 
-function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestart }: {
-  data: StoryData; score: Score; answers: Answers; headingRef: Ref<HTMLHeadingElement>; hidden: boolean;
-  onBack: () => void; onRestart: () => void;
+function Takeaway({ data, score, answers, openingHeading, onRestart }: {
+  data: StoryData; score: Score; answers: Answers; openingHeading?: ReactNode;
+  onRestart: () => void;
 }) {
   const { agreement, widest } = takeawayExamples(data.questions);
   const { matches, compared } = groupMatch(data.questions, score, answers);
@@ -218,30 +233,24 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const understanding = data.questions.find(question => question.id === 'understanding');
   const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
   const offArcSharedValue = (data.disillusioned?.groups.unplaced.understandingPercent ?? 0) > 50;
-  return <main hidden={hidden} className={data.disillusioned
-    ? 'story-page conclusion-page is-closing-result' : 'story-page conclusion-page'}>
-    <header className="story-header">
-      <Wordmark />
-      <button className="back-button" onClick={onBack}><Arrow back /> Back</button>
-    </header>
-    <section className="conclusion-opening" aria-labelledby="story-heading">
-      <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">
-        A label tells <mark>part</mark> of the story.
-      </h1>
-      <div className="conclusion-summary">
-        <div className="conclusion-mark">
-          <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
-          <div><span>Your starting group</span><b>{group}{score !== 5 && ' · Mark ' + score}</b></div>
-        </div>
-        {compared > 0 ? <>
-          <p className="conclusion-score"><strong>{matches}</strong> <span>of {compared}</span></p>
-          <p>Answers that matched the most common choice in your starting group.</p>
-          <div className="conclusion-dots" aria-hidden="true">
-            {Array.from({ length: compared }, (_, i) => <i className={i < matches ? 'is-match' : ''} key={i} />)}
-          </div>
-        </> : <p>There are no comparable responses in your starting group.</p>}
+  const summary = <div className="conclusion-summary">
+    <div className="conclusion-mark">
+      <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
+      <div><span>Your starting group</span><b>{group}{score !== 5 && ' · Mark ' + score}</b></div>
+    </div>
+    {compared > 0 ? <>
+      <p className="conclusion-score"><strong>{matches}</strong> <span>of {compared}</span></p>
+      <p>Answers that matched the most common choice in your starting group.</p>
+      <div className="conclusion-dots" aria-hidden="true">
+        {Array.from({ length: compared }, (_, i) => <i className={i < matches ? 'is-match' : ''} key={i} />)}
       </div>
-    </section>
+    </> : <p>There are no comparable responses in your starting group.</p>}
+  </div>;
+  return <>
+    {openingHeading ? <section className="conclusion-opening" aria-labelledby="story-heading">
+      {openingHeading}
+      {summary}
+    </section> : summary}
     {patterns && <section className="conclusion-context" aria-labelledby="conclusion-context-heading">
       <h2 id="conclusion-context-heading">How others answered</h2>
       <div className="conclusion-cards">
@@ -298,6 +307,5 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
         : 'Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.'}</p>
       <Continue onClick={onRestart}>Start over</Continue>
     </div>
-    <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>
-  </main>;
+  </>;
 }

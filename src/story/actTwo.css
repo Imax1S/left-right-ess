@@ -110,9 +110,19 @@ html:has(.story-page.is-closing-result:not([hidden])) {
 .circle-label { font: 820 10px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
 .is-understanding .respondent { transition-duration: 290ms, 820ms; transition-delay: 0ms, var(--delay); }
 .is-understanding .reader-marker { transition-duration: 760ms; }
+.step-conclusion .story-controls {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  animation: act-two-reveal 260ms ease both;
+}
+.step-conclusion .conclusion-summary { padding: clamp(14px, 2vw, 22px); }
+.step-conclusion .conclusion-score strong { font-size: clamp(47px, 5vw, 70px); }
+.step-conclusion .conclusion-stat > strong { font-size: clamp(28px, 4vw, 42px); }
 
 @media (min-width: 800px) {
   .step-act-two .story-grid { gap: 15px clamp(24px, 4vw, 72px); }
   .step-act-two.step-vote-result .story-heading { font-size: clamp(26px, 3.3vw, 49px); }
   .voting-cards .facts { padding-block-end: calc(6px + clamp(32px, 5.5vw, 80px)); padding-inline-end: 10px; }
+  .step-conclusion .story-visual { position: sticky; top: 24px; }
 }
