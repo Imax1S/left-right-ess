@@ -40,6 +40,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } : undefined;
   const index = 'index' in state ? state.index : -1;
   const question = index >= 0 ? data.questions[index] : null;
+  const comparisonLayout = question !== null || chapterPrompt || step === 'quadrant';
   const result = state.step === 'result' && question ? {
     question,
     choice: state.option,
@@ -60,7 +61,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   useEffect(() => {
     if (showMethod || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
-    if (step !== 'result' || closingCircle) window.scrollTo({ top: 0, behavior: 'instant' });
+    if (step !== 'result' || closingCircle) {
+      const animateScroll = step === 'quadrant' && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      window.scrollTo({ top: 0, behavior: animateScroll ? 'smooth' : 'instant' });
+    }
   }, [step, index, showMethod, closingCircle]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
@@ -145,7 +149,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${question || chapterPrompt ? ' step-comparison' : ''}${actTwoScreen || closingQuestion ? ' step-act-two' : ''}${monochrome ? ' is-monochrome' : ''}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion ? ' step-act-two' : ''}${monochrome ? ' is-monochrome' : ''}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -163,7 +167,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
           {offArcQuestion && data.disillusioned
             ? <OffArcAnswerPlot share={data.disillusioned.groups.unplaced[offArcQuestion.field]} />
             : <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
-              comparison={question !== null || actTwoScreen} result={result}
+              comparison={comparisonLayout || actTwoScreen} result={result}
               quadrant={quadrant} understandingCircle={understandingCircle} onPlace={step === 'scale' ? place : undefined} />}
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
           {chartNote}

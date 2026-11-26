@@ -108,8 +108,23 @@ html:has(.story-page.is-monochrome:not([hidden])) { filter: grayscale(1); }
 .quadrant-canvas text { fill: var(--ink); font-size: 11.5px; font-weight: 850; }
 .quadrant-canvas .quadrant-column { text-anchor: middle; font-size: 13px; }
 .quadrant-neutral { stroke: #b4a68f; stroke-width: 1.5; stroke-dasharray: 3 4; }
-.is-quadrant .respondent { transition-duration: 260ms, 800ms; transition-delay: 0ms, var(--delay); }
-.is-quadrant .reader-marker { transition-duration: 760ms; }
+.is-quadrant .placement-canvas { transition: opacity 530ms ease; }
+.is-quadrant .quadrant-canvas { transition: opacity 560ms ease 190ms; }
+.is-quadrant .respondent {
+  transition:
+    opacity 500ms ease,
+    transform 960ms cubic-bezier(0.43, 0, 0.22, 1) var(--delay),
+    fill 440ms ease,
+    stroke 440ms ease;
+}
+.is-quadrant .reader-marker { transition-duration: 910ms; }
+.step-quadrant :is(.story-heading, .story-controls, .quadrant-legend) {
+  animation: quadrant-reveal 310ms ease 310ms both;
+}
+@keyframes quadrant-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .quadrant-legend {
   display: flex;
   justify-content: center;

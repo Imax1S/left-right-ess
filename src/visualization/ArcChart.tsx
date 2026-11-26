@@ -145,7 +145,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
-          <g className={groups || grid || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
+          <g className={groups || grid || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
             {sides.map(side => <path key={side} className={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
             {score !== null && <path className="score-band" d={scoreBand(score)} />}
@@ -183,7 +183,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
             const circlePoint = circle?.dots.get(person.id);
             const gridPoint = grid?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
-            const point = circlePoint ?? gridPoint ?? answerPoint ?? arcPositions.get(person.id)!;
+            const arcPoint = arcPositions.get(person.id)!;
+            const point = circlePoint ?? gridPoint ?? answerPoint ?? arcPoint;
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
@@ -192,10 +193,12 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : sameScore ? 1 : 0.5;
+            const delay = gridPoint ? Math.round(arcPoint.x / viewBox.width * 120)
+              : groups || circle ? (index % 15) * 20 : 0;
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
               opacity,
-              '--delay': groups || grid || circle ? `${(index % 15) * 20}ms` : '0ms',
+              '--delay': delay + 'ms',
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
