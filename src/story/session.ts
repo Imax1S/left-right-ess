@@ -5,8 +5,8 @@ import type { HighlightFilter } from './highlights.ts';
 
 export type Answers = Readonly<Partial<Record<number, Choice>>>;
 type Progress = { score: Score; answers: Answers };
-const offArcSteps = ['missing-prompt', 'engagement', 'trust', 'influence', 'turnout'] as const;
-const actTwoSteps = ['axis-prompt', 'quadrant', ...offArcSteps] as const;
+const offArcSteps = ['engagement', 'trust', 'influence', 'turnout'] as const;
+const actTwoSteps = ['axis-prompt', 'quadrant', 'missing-prompt', ...offArcSteps] as const;
 type ActTwoStep = (typeof actTwoSteps)[number];
 
 export type Session =

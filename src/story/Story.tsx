@@ -48,7 +48,8 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } : null;
   const closingQuestion = hasActTwo && question?.id === 'understanding';
   const closingCircle = closingQuestion && result !== null;
-  const monochrome = isOffArcStep(step) || (closingQuestion && !closingCircle);
+  const palette = isOffArcStep(step) ? ' is-monochrome'
+    : closingCircle ? ' is-closing-result' : closingQuestion ? ' is-closing-question' : '';
   const understandingCircle = closingCircle ? {
     range: result && data.disillusioned ? understandingRange(data.disillusioned) : null,
   } : undefined;
@@ -149,7 +150,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion ? ' step-act-two' : ''}${monochrome ? ' is-monochrome' : ''}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${actTwoScreen || closingQuestion ? ' step-act-two' : ''}${palette}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -201,7 +202,8 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const understanding = data.questions.find(question => question.id === 'understanding');
   const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
   const offArcSharedValue = (data.disillusioned?.groups.unplaced.understandingPercent ?? 0) > 50;
-  return <main hidden={hidden} className="story-page conclusion-page">
+  return <main hidden={hidden} className={data.disillusioned && data.quadrant
+    ? 'story-page conclusion-page is-closing-result' : 'story-page conclusion-page'}>
     <header className="story-header">
       <Wordmark />
       <button className="back-button" onClick={onBack}><Arrow back /> Back</button>

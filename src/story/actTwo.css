@@ -2,7 +2,19 @@
 .step-act-two .story-heading { max-width: 16ch; }
 .step-act-two .story-plot { min-width: 0; }
 .answer-options.single-answer { grid-template-columns: minmax(0, 1fr); }
-html:has(.story-page.is-monochrome:not([hidden])) { filter: grayscale(1); }
+html { transition: filter 660ms ease, background-color 660ms ease; }
+html:has(.story-page.is-monochrome:not([hidden])) {
+  background-color: #f1f1f1;
+  filter: grayscale(1) saturate(1);
+}
+html:has(.story-page.is-closing-question:not([hidden])) {
+  background-color: #f8eedb;
+  filter: grayscale(0) saturate(1.06);
+}
+html:has(.story-page.is-closing-result:not([hidden])) {
+  background-color: #fff3d5;
+  filter: grayscale(0) saturate(1.16);
+}
 
 .unplaced-share {
   padding: clamp(13px, 3vw, 22px);
@@ -119,9 +131,12 @@ html:has(.story-page.is-monochrome:not([hidden])) { filter: grayscale(1); }
 }
 .is-quadrant .reader-marker { transition-duration: 910ms; }
 .step-quadrant :is(.story-heading, .story-controls, .quadrant-legend) {
-  animation: quadrant-reveal 310ms ease 310ms both;
+  animation: act-two-reveal 310ms ease 310ms both;
 }
-@keyframes quadrant-reveal {
+.is-closing-question :is(.story-heading, .story-controls) {
+  animation: act-two-reveal 260ms ease 340ms both;
+}
+@keyframes act-two-reveal {
   from { opacity: 0; }
   to { opacity: 1; }
 }
@@ -139,7 +154,7 @@ html:has(.story-page.is-monochrome:not([hidden])) { filter: grayscale(1); }
 .quadrant-legend .right::before { rotate: 45deg; }
 
 .circle-outline { fill: none; stroke: #c6b99f; stroke-width: 1.3px; }
-.circle-core { fill: var(--cream); }
+.circle-core { fill: #ffe9a6; }
 .circle-number, .circle-label { fill: var(--ink); text-anchor: middle; }
 .circle-number { font: 840 23px var(--display); letter-spacing: -0.06em; }
 .circle-label { font: 820 10px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
