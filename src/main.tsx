@@ -28,7 +28,7 @@ function App({ data }: { data: StoryData }) {
 const root = createRoot(document.getElementById('root')!);
 root.render(<main className="status"><Wordmark /><p role="status">Loading the survey…</p></main>);
 try {
-  const response = await fetch(new URL('./story.json?v=4', document.baseURI));
+  const response = await fetch(new URL('./story.json?v=5', document.baseURI));
   if (!response.ok) throw new Error(`Survey data returned ${response.status}`);
   const data: StoryData = await response.json();
   root.render(<StrictMode><App data={data} /></StrictMode>);

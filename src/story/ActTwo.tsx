@@ -13,44 +13,69 @@ export function UnplacedShare({ data }: { data: DisillusionedSummary }) {
       <strong>{formatShare(percent)}</strong>
       <span>had no recorded<br />left–right mark</span>
     </div>
-    <div className="unplaced-track" aria-hidden="true"><span style={{ width: percent + '%' }} /></div>
+    <div className="unplaced-dots" aria-hidden="true">
+      {Array.from({ length: Math.round(percent) }, (_, index) => <span key={index} />)}
+    </div>
     <p>{integer.format(data.unplacedCount)} of {integer.format(data.eligibleTotalCount)} respondents across the countries in this story. The percentage is weighted.</p>
+    <p>Each dot represents about 1% of respondents.</p>
   </div>;
 }
 
-export function EngagementDetails({ data, onContinue }: { data: DisillusionedSummary; onContinue: () => void }) {
-  const { centreVotersNoSayPercent, centreNonVotersNoSayPercent, groups } = data;
-  const offArc = groups.unplaced;
-  const leastEngaged = sides.every(side => {
-    const group = groups[side];
-    return offArc.votedPercent !== null && group.votedPercent !== null && offArc.votedPercent < group.votedPercent &&
-      offArc.lowTrustPercent !== null && group.lowTrustPercent !== null && offArc.lowTrustPercent > group.lowTrustPercent &&
-      offArc.noSayPercent !== null && group.noSayPercent !== null && offArc.noSayPercent > group.noSayPercent;
-  });
+export const offArcQuestions = {
+  trust: {
+    prompt: 'How much do you trust your country’s parliament?',
+    field: 'lowTrustPercent',
+    answers: ['Low trust (0–4)', 'Trust rating of 5–10'],
+    next: 'Look at political influence',
+  },
+  influence: {
+    prompt: 'How much say do people like you have in what the government does?',
+    field: 'noSayPercent',
+    answers: ['Little or no say', 'Some say or more'],
+    next: 'Look at voting',
+  },
+  turnout: {
+    prompt: 'Did you vote in the last national election?',
+    field: 'votedPercent',
+    answers: ['Voted', 'Did not vote'],
+    next: 'One last question',
+  },
+} as const;
+type OffArcQuestion = (typeof offArcQuestions)[keyof typeof offArcQuestions];
+
+export function OffArcAnswerPlot({ share }: { share: number | null }) {
+  return <figure className="off-arc-plot">
+    {share === null ? <p>No recorded answers</p> : <>
+      <div className="off-arc-dots" aria-hidden="true">
+        {Array.from({ length: 100 }, (_, index) =>
+          <span key={index} className={index < Math.round(share) ? 'is-first' : undefined} />)}
+      </div>
+      <figcaption>Each dot represents about 1% of the answers from people without a mark.</figcaption>
+    </>}
+  </figure>;
+}
+
+export function OffArcAnswerDetails({ question, data, onContinue }: {
+  question: OffArcQuestion; data: DisillusionedSummary; onContinue: () => void;
+}) {
+  const share = data.groups.unplaced[question.field];
   return <div className="act-two-panel">
-    <p>{leastEngaged
-      ? 'People without a mark voted less often than any group on the arc. They more often reported low trust in parliament and little or no say in politics.'
-      : 'Their other answers tell us how often they voted, how much they trusted parliament and how much say they felt they had.'}</p>
-    <table className="act-table engagement-table">
-      <thead><tr><th scope="col">Group</th><th scope="col">Voted</th><th scope="col">Low trust in parliament</th><th scope="col">Little or no say</th></tr></thead>
-      <tbody>
-        {surveyedGroups.map(group => <tr key={group} className={group}>
-          <th scope="row">{groupLabels[group]}</th>
-          <td>{formatShare(data.groups[group].votedPercent)}</td>
-          <td>{formatShare(data.groups[group].lowTrustPercent)}</td>
-          <td>{formatShare(data.groups[group].noSayPercent)}</td>
-        </tr>)}
-      </tbody>
-    </table>
-    <p className="act-note">These came from separate survey questions. The reasons for leaving the scale blank are unknown.</p>
+    <dl className="off-arc-answers" aria-label="Answers from people without a mark">
+      {question.answers.map((answer, index) => <div key={answer}>
+        <dt>{answer}</dt>
+        <dd>{formatShare(share === null || index === 0 ? share : 100 - share)}</dd>
+      </div>)}
+    </dl>
     <details className="result-details">
-      <summary>About these numbers</summary>
-      <p>Voting shares include eligible voters. Low trust means 0–4 on the 0–10 scale.</p>
-      {centreVotersNoSayPercent !== null && centreNonVotersNoSayPercent !== null && <p>
-        Among people who chose 5, {formatShare(centreNonVotersNoSayPercent)} of non-voters reported little or no say, compared with {formatShare(centreVotersNoSayPercent)} of voters.
-      </p>}
+      <summary>Compare with people on the arc</summary>
+      <dl>{sides.map(side => <div key={side}>
+        <dt>{groupLabels[side]}</dt><dd>{formatShare(data.groups[side][question.field])}</dd>
+      </div>)}</dl>
     </details>
-    <Continue onClick={onContinue}>One last question</Continue>
+    <p className="act-note">{question.field === 'votedPercent'
+      ? 'Weighted shares among eligible voters who answered yes or no.'
+      : 'Weighted shares among respondents who answered this question.'}</p>
+    <Continue onClick={onContinue}>{question.next}</Continue>
   </div>;
 }
 
@@ -68,22 +93,24 @@ export function QuadrantLegend() {
 }
 
 export function QuadrantDetails({ data, onContinue }: { data: QuadrantSummary; onContinue: () => void }) {
-  const rightAcrossCorners = quadrantKeys.every(key => (data.byGroup.right[key] ?? 0) > 0);
   const mixedCorners = quadrantKeys.every(key => sides.filter(side => (data.byGroup[side][key] ?? 0) > 0).length > 1);
   return <div className="act-two-panel">
-    <p>The same dots move based on what people said about reducing income differences and admitting people from poorer countries outside Europe.</p>
-    <table className="act-table quadrant-table">
-      <thead><tr><th scope="col">Answer combination</th>{sides.map(side =>
-        <th key={side} scope="col" className={side}>{side === 'centre' ? 'Centre' : groupLabels[side]}</th>)}</tr></thead>
-      <tbody>{quadrantKeys.map(key => <tr key={key}>
-        <th scope="row"><b>{combinations[key][0]}</b><small>{combinations[key][1]}</small></th>
-        {sides.map(side => <td key={side} className={side}>{formatShare(data.byGroup[side][key])}</td>)}
-      </tr>)}</tbody>
-    </table>
-    {mixedCorners && <p>People from different starting groups still share every corner.
-      {rightAcrossCorners && ' People who placed themselves on the right show up in all four.'}</p>}
-    <p className="act-note">Middle answers on income sit between the rows. Dots without both answers sit below. The table uses survey weights for {integer.format(data.totalCount)} people whose answers fit one of the four corners.</p>
-    <Continue onClick={onContinue}>Who’s missing?</Continue>
+    <p>{mixedCorners
+      ? 'People from different starting groups still share every corner.'
+      : 'The same people are now grouped by their answers on income and immigration.'}</p>
+    <details className="result-details quadrant-numbers">
+      <summary>See the numbers</summary>
+      <table className="act-table quadrant-table">
+        <thead><tr><th scope="col">Answer combination</th>{sides.map(side =>
+          <th key={side} scope="col" className={side}>{side === 'centre' ? 'Centre' : groupLabels[side]}</th>)}</tr></thead>
+        <tbody>{quadrantKeys.map(key => <tr key={key}>
+          <th scope="row"><b>{combinations[key][0]}</b><small>{combinations[key][1]}</small></th>
+          {sides.map(side => <td key={side} className={side}>{formatShare(data.byGroup[side][key])}</td>)}
+        </tr>)}</tbody>
+      </table>
+      <p className="act-note">Middle answers on income sit between the rows. Dots without both answers sit below. The table uses survey weights for {integer.format(data.totalCount)} people whose answers fit one of the four corners.</p>
+    </details>
+    <Continue onClick={onContinue}>Continue</Continue>
   </div>;
 }
 

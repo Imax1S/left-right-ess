@@ -81,8 +81,6 @@ export interface DisillusionedSummary {
   unplacedSharePercent: number;
   eligibleTotalCount: number;
   groups: Record<Side | 'unplaced', GroupEngagement>;
-  centreNonVotersNoSayPercent: number | null;
-  centreVotersNoSayPercent: number | null;
 }
 
 export const quadrantKeys = ['reduceAllow', 'reduceLimit', 'opposeAllow', 'opposeLimit'] as const;

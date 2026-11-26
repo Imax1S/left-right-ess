@@ -61,16 +61,27 @@ export function ScaleControls({ score, shown, onPlace }: {
 
 const answerIcons = { a: 'm5 16 7 7L27 8', b: 'm8 8 16 16M24 8 8 24' } as const;
 
+function AnswerButton({ choice, label, onClick }: { choice: 'a' | 'b'; label: string; onClick: () => void }) {
+  return <button onClick={onClick}>
+    <svg aria-hidden="true" width="29" height="29" viewBox="0 0 32 32" fill="none">
+      <path d={answerIcons[choice]} stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+    <span>{label}</span>
+  </button>;
+}
+
+export function YesControl({ onYes }: { onYes: () => void }) {
+  return <div className="answer-options single-answer" role="group" aria-label="Continue this story">
+    <AnswerButton choice="a" label="Yes" onClick={onYes} />
+  </div>;
+}
+
 export function QuestionControls({ question, onAnswer }: {
   question: StoryQuestion; onAnswer: (choice: Choice) => void;
 }) {
   return <div className="answer-options" role="group" aria-label="Choose your answer">
-    {(['a', 'b'] as const).map(choice => <button key={choice} onClick={() => onAnswer(choice)}>
-      <svg aria-hidden="true" width="29" height="29" viewBox="0 0 32 32" fill="none">
-        <path d={answerIcons[choice]} stroke="currentColor" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-      <span>{question.options[choice]}</span>
-    </button>)}
+    {(['a', 'b'] as const).map(choice =>
+      <AnswerButton key={choice} choice={choice} label={question.options[choice]} onClick={() => onAnswer(choice)} />)}
     {question.options.neutral && <button className="answer-middle" onClick={() => onAnswer('neutral')}>
       {question.options.neutral}
     </button>}

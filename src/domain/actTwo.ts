@@ -38,15 +38,8 @@ function percent(weight: number, total: number) {
 
 export function summarizeEngagement(people: readonly Respondent[], unplaced: EngagementTallies): DisillusionedSummary {
   const totals = { left: emptyEngagement(), centre: emptyEngagement(), right: emptyEngagement(), unplaced };
-  const centreVoters = emptyEngagement();
-  const centreNonVoters = emptyEngagement();
   for (const person of people) {
-    const side = sideOf(person.score);
-    const engagement = person.engagement ?? {};
-    tallyEngagement(totals[side], person.weight, engagement);
-    if (side === 'centre' && engagement.voted !== undefined) {
-      tallyEngagement(engagement.voted ? centreVoters : centreNonVoters, person.weight, engagement);
-    }
+    tallyEngagement(totals[sideOf(person.score)], person.weight, person.engagement ?? {});
   }
   const total = Object.values(totals).reduce((sum, group) => sum + group.weight, 0);
   const shares = (group: EngagementTallies) => ({
@@ -62,8 +55,6 @@ export function summarizeEngagement(people: readonly Respondent[], unplaced: Eng
     groups: {
       left: shares(totals.left), centre: shares(totals.centre), right: shares(totals.right), unplaced: shares(unplaced),
     },
-    centreNonVotersNoSayPercent: percent(centreNonVoters.noSayWeight, centreNonVoters.sayWeight),
-    centreVotersNoSayPercent: percent(centreVoters.noSayWeight, centreVoters.sayWeight),
   };
 }
 

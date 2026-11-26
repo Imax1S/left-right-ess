@@ -3,14 +3,15 @@ import type { ReactNode, Ref } from 'react';
 import { sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts';
 import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
-import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, formatShare, integer } from './controls.tsx';
+import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, YesControl,
+  formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { EngagementDetails, QuadrantDetails, QuadrantLegend, UnderstandingResult,
-  understandingRange, UnplacedShare } from './ActTwo.tsx';
+import { OffArcAnswerDetails, OffArcAnswerPlot, offArcQuestions, QuadrantDetails, QuadrantLegend,
+  UnderstandingResult, understandingRange, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
-import { createSessionReducer, initialSession } from './session.ts';
+import { createSessionReducer, initialSession, isActTwoStep, isOffArcStep } from './session.ts';
 import type { Answers } from './session.ts';
 
 export function Wordmark() {
@@ -30,7 +31,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const headingRef = useRef<HTMLHeadingElement>(null);
   const focusOnChange = useRef(false);
   const { step, score } = state;
-  const actTwoScreen = state.step === 'engagement' || state.step === 'quadrant';
+  const actTwoScreen = isActTwoStep(step);
+  const chapterPrompt = step === 'axis-prompt' || step === 'missing-prompt';
+  const offArcQuestion = step === 'trust' || step === 'influence' || step === 'turnout' ? offArcQuestions[step] : null;
   const quadrant = state.step === 'quadrant' ? {
     inequality: state.answers[data.questions.findIndex(question => question.id === 'inequality')],
     migration: state.answers[data.questions.findIndex(question => question.id === 'migration')],
@@ -42,7 +45,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     choice: state.option,
     alignment: answerAlignment(question.stats, state.option, state.score),
   } : null;
-  const closingCircle = hasActTwo && question?.id === 'understanding';
+  const closingQuestion = hasActTwo && question?.id === 'understanding';
+  const closingCircle = closingQuestion && result !== null;
+  const monochrome = isOffArcStep(step) || (closingQuestion && !closingCircle);
   const understandingCircle = closingCircle ? {
     range: result && data.disillusioned ? understandingRange(data.disillusioned) : null,
   } : undefined;
@@ -55,8 +60,8 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   useEffect(() => {
     if (showMethod || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
-    if (step !== 'result') window.scrollTo({ top: 0, behavior: 'instant' });
-  }, [step, index, showMethod]);
+    if (step !== 'result' || closingCircle) window.scrollTo({ top: 0, behavior: 'instant' });
+  }, [step, index, showMethod, closingCircle]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
     focusOnChange.current = true;
@@ -78,6 +83,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   let cards: ReactNode;
   let controls: ReactNode;
   let chartNote: ReactNode;
+  const next = () => navigate({ type: 'next' });
   if (state.step === 'scale') {
     heading = <>Where do <mark>you</mark> place yourself?</>;
     cards = <>
@@ -103,35 +109,43 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (closingCircle && result && data.disillusioned) {
     heading = 'Understanding is common ground.';
     controls = <UnderstandingResult data={data.disillusioned} answer={result.question.options[result.choice] ?? ''}
-      onContinue={() => navigate({ type: 'next' })} />;
+      onContinue={next} />;
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
-    const startsSecondAct = hasActTwo && data.questions[index + 1]?.id === 'understanding';
     const answer = result.question.options[result.choice];
     heading = answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
-      continueLabel={final ? 'See the takeaway' : startsSecondAct ? 'Try two axes' : 'Next question'}
-      onContinue={() => navigate({ type: 'next' })} />;
+      continueLabel={final ? 'See the takeaway' : 'Next question'} onContinue={next} />;
+  } else if (chapterPrompt) {
+    heading = step === 'axis-prompt' ? 'What if we add a second axis?' : 'Could we be missing anyone?';
+    controls = <YesControl onYes={next} />;
   } else if (state.step === 'engagement' && data.disillusioned) {
-    heading = 'Who did the scale leave out?';
+    heading = 'They were outside the scale.';
     chartNote = <UnplacedShare data={data.disillusioned} />;
-    controls = <EngagementDetails data={data.disillusioned} onContinue={() => navigate({ type: 'next' })} />;
+    controls = <div className="act-two-panel">
+      <p>We know how they answered other questions. Let’s start with trust in parliament.</p>
+      <p className="act-note">The reasons for leaving the scale blank are unknown.</p>
+      <Continue onClick={next}>Look at trust</Continue>
+    </div>;
+  } else if (offArcQuestion && data.disillusioned) {
+    heading = offArcQuestion.prompt;
+    controls = <OffArcAnswerDetails question={offArcQuestion} data={data.disillusioned} onContinue={next} />;
   } else if (state.step === 'quadrant' && data.quadrant) {
-    heading = 'What if we add a second axis?';
+    heading = 'Two answers. Four corners.';
     chartNote = <QuadrantLegend />;
-    controls = <QuadrantDetails data={data.quadrant} onContinue={() => navigate({ type: 'next' })} />;
+    controls = <QuadrantDetails data={data.quadrant} onContinue={next} />;
   }
 
-  if (question && !closingCircle) {
+  if (question && !closingQuestion) {
     cards = <>
       <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
       <Fact value={question.topic} caption="Topic" />
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}${actTwoScreen || closingCircle ? ' step-act-two' : ''}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${question || chapterPrompt ? ' step-comparison' : ''}${actTwoScreen || closingQuestion ? ' step-act-two' : ''}${monochrome ? ' is-monochrome' : ''}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -146,9 +160,11 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       <div className="story-visual">
         {cards && <div className="facts">{cards}</div>}
         <div className="story-plot">
-          <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
-            comparison={question !== null || actTwoScreen} result={result} engagement={step === 'engagement'}
-            quadrant={quadrant} understandingCircle={understandingCircle} onPlace={step === 'scale' ? place : undefined} />
+          {offArcQuestion && data.disillusioned
+            ? <OffArcAnswerPlot share={data.disillusioned.groups.unplaced[offArcQuestion.field]} />
+            : <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
+              comparison={question !== null || actTwoScreen} result={result}
+              quadrant={quadrant} understandingCircle={understandingCircle} onPlace={step === 'scale' ? place : undefined} />}
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
           {chartNote}
         </div>

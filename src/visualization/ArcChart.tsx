@@ -15,7 +15,6 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
-  engagement?: boolean;
   quadrant?: { inequality?: Choice; migration?: Choice };
   understandingCircle?: { range: string | null };
   onPlace?: (score: Score) => void;
@@ -39,7 +38,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, engagement, quadrant, understandingCircle, onPlace }: Props) {
+export function ArcChart({ dots, score, highlightedIds, comparison, result, quadrant, understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -78,7 +77,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
   ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
-  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${engagement ? ' is-engagement' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}`;
+  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
     left: `${pointers.start.x / viewBox.width * 100}%`,
@@ -149,8 +148,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
           <g className={groups || grid || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
             {sides.map(side => <path key={side} className={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
-            {score !== null && !engagement && <path className="score-band" d={scoreBand(score)} />}
-            {pointerLine && !engagement && <path className="score-pointer" d={pointerLine} />}
+            {score !== null && <path className="score-band" d={scoreBand(score)} />}
+            {pointerLine && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
             <text className="arc-end" x="200" y="211">5</text>
             <text className="arc-end" x="332" y="211">10</text>
@@ -190,7 +189,6 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
             const highlighted = highlightedIds?.has(person.id);
             const opacity = circlePoint ? (result && person.answers.understanding !== 'a' ? 0.35 : 0.94)
               : gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
-              : engagement ? (side === 'centre' ? 0.92 : 0.29)
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : sameScore ? 1 : 0.5;
@@ -201,7 +199,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
-              data-same-score={sameScore && !grid && !engagement && !circle ? 'true' : undefined}>
+              data-same-score={sameScore && !grid && !circle ? 'true' : undefined}>
               <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
@@ -228,7 +226,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
           ))}
         </div>}
       </div>
-      {!canPlace && !engagement && !grid && !circle && score !== null && <figcaption className="arc-caption">
+      {!canPlace && !grid && !circle && score !== null && <figcaption className="arc-caption">
         <span className="arc-legend">People at your starting mark ({score})</span>
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}
