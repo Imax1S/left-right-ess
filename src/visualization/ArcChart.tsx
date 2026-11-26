@@ -7,7 +7,10 @@ import {
   answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
+import type { Point } from './geometry.ts';
 import { quadrantCells, quadrantLayout } from './quadrantLayout.ts';
+
+type QuadrantAnswers = { inequality?: Choice; migration?: Choice };
 
 interface Props {
   dots: Dot[];
@@ -15,12 +18,24 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
-  quadrant?: { inequality?: Choice; migration?: Choice };
+  quadrant?: QuadrantAnswers;
+  offArc?: { share: number; answerShare?: number | null };
+  returningToArc?: QuadrantAnswers;
   understandingCircle?: { range: string | null };
   onPlace?: (score: Score) => void;
 }
 
-type MotionStyle = CSSProperties & { '--delay': string };
+type MotionStyle = CSSProperties & {
+  '--delay'?: string; '--from-arc'?: string; '--through-columns'?: string; '--from-quadrant'?: string;
+};
+
+function moveTo({ x, y }: Point) {
+  return `translate(${x}px, ${y}px)`;
+}
+
+function throughColumns(from: Point, to: Point): MotionStyle {
+  return { '--from-arc': moveTo(from), '--through-columns': moveTo({ x: to.x, y: from.y }) };
+}
 
 export function RespondentShape({ side, radius }: { side: Side; radius: number }) {
   if (side === 'left') return <circle r={radius} />;
@@ -38,7 +53,8 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, quadrant, understandingCircle, onPlace }: Props) {
+export function ArcChart({ dots, score, highlightedIds, comparison, result, quadrant, offArc, returningToArc,
+  understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -55,19 +71,36 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
       : null,
     [dots, inCircle, question, choice, destination, arc.radius],
   );
-  const circle = useMemo(() => inCircle ? circleLayout(dots) : null, [dots, inCircle]);
-  const range = understandingCircle?.range;
-  const inequalityAnswer = quadrant?.inequality;
-  const migrationAnswer = quadrant?.migration;
-  const inQuadrants = quadrant !== undefined;
-  const grid = useMemo(
-    () => inQuadrants ? quadrantLayout(dots, inequalityAnswer, migrationAnswer) : null,
-    [dots, inQuadrants, inequalityAnswer, migrationAnswer],
+  const offArcShare = offArc?.share ?? 0;
+  const offArcCount = offArcShare < 100 ? Math.round(dots.length * offArcShare / (100 - offArcShare)) : 0;
+  const offArcIds = useMemo(
+    () => Array.from({ length: offArcCount }, (_, index) => 'off-arc-' + index), [offArcCount],
   );
+  const offArcSpacing = Math.min(11, 300 / Math.max(1, offArcCount));
+  const offArcHighlighted = offArc?.answerShare === undefined ? offArcCount
+    : Math.round(offArcCount * (offArc.answerShare ?? 0) / 100);
+  const circle = useMemo(() => inCircle ? circleLayout(dots, offArcIds) : null, [dots, inCircle, offArcIds]);
+  const range = understandingCircle?.range;
+  const gridAnswers = quadrant ?? returningToArc;
+  const inequalityAnswer = gridAnswers?.inequality;
+  const migrationAnswer = gridAnswers?.migration;
+  const needsGrid = gridAnswers !== undefined;
+  const gridLayout = useMemo(
+    () => needsGrid ? quadrantLayout(dots, inequalityAnswer, migrationAnswer) : null,
+    [dots, needsGrid, inequalityAnswer, migrationAnswer],
+  );
+  const grid = quadrant ? gridLayout : null;
+  const exitGrid = returningToArc ? gridLayout : null;
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
   const selected = circle?.marker ?? grid?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
-  const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
+  const markerTransform = moveTo(selected);
+  const markerStyle: MotionStyle = {
+    transform: markerTransform,
+    opacity: grid && !grid.marker ? 0 : 1,
+    ...(grid?.marker && pointers ? throughColumns(pointers.marker, grid.marker) : {}),
+    ...(exitGrid?.marker ? { '--from-quadrant': moveTo(exitGrid.marker) } : {}),
+  };
   const captions = groups && (groups.middle
     ? [groups.bands[0], groups.middle, groups.bands[1]]
     : groups.bands);
@@ -77,7 +110,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
   ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
-  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}`;
+  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}${returningToArc ? ' is-returning-to-arc' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
     left: `${pointers.start.x / viewBox.width * 100}%`,
@@ -135,14 +168,17 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
 
   return (
     <figure className={figureClass} aria-label={circle
-      ? 'The same respondents and your marker form a circle.' + (range ? ' The weighted share who chose “More like me” ranges from ' + range + ' across the four groups.' : '')
+      ? (offArcCount ? 'The respondents from the arc, grey dots for those without a mark, and your marker form a circle.'
+        : 'The same respondents and your marker form a circle.')
+        + (range ? ' The weighted share who chose “More like me” ranges from ' + range + ' across the four groups.' : '')
       : grid
       ? 'The same respondents grouped by answers about income and immigration. Shapes identify their starting political groups.'
       : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
-        ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
+        ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
+        + (offArcCount ? ' Grey dots below the arc represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups || grid || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
@@ -182,6 +218,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
           {dots.map((person, index) => {
             const circlePoint = circle?.dots.get(person.id);
             const gridPoint = grid?.dots.get(person.id);
+            const exitPoint = exitGrid?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
             const arcPoint = arcPositions.get(person.id)!;
             const point = circlePoint ?? gridPoint ?? answerPoint ?? arcPoint;
@@ -190,15 +227,18 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
             const highlighted = highlightedIds?.has(person.id);
             const opacity = circlePoint ? (result && person.answers.understanding !== 'a' ? 0.35 : 0.94)
               : gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
+              : offArc ? 0.38
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
               : score === null ? 0.66 : sameScore ? 1 : 0.5;
             const delay = gridPoint ? Math.round(arcPoint.x / viewBox.width * 120)
               : groups || circle ? (index % 15) * 20 : 0;
             const style: MotionStyle = {
-              transform: `translate(${point.x}px, ${point.y}px)`,
+              transform: moveTo(point),
               opacity,
               '--delay': delay + 'ms',
+              ...(gridPoint ? throughColumns(arcPoint, gridPoint) : {}),
+              ...(exitPoint ? { '--from-quadrant': moveTo(exitPoint) } : {}),
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
@@ -206,7 +246,19 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
               <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
-          <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform, opacity: grid && !grid.marker ? 0 : 1 }}>
+          {offArcIds.map((id, index) => {
+            const point = circle?.dots.get(id) ?? {
+              x: viewBox.width / 2 + (index - (offArcCount - 1) / 2) * offArcSpacing,
+              y: comparisonHeight - 20,
+              r: Math.min(4, offArcSpacing * 0.37),
+            };
+            const style: MotionStyle = {
+              transform: moveTo(point), opacity: index < offArcHighlighted ? 0.95 : 0.28,
+              '--delay': circle ? index % 10 * 20 + 'ms' : '0ms',
+            };
+            return <g key={id} className="respondent off-arc-dot" style={style}><circle r={point.r} /></g>;
+          })}
+          <g ref={markerRef} className="reader-marker" style={markerStyle}>
             <ReaderGlyph score={score} />
           </g>
           {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
@@ -230,7 +282,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, quad
         </div>}
       </div>
       {!canPlace && !grid && !circle && score !== null && <figcaption className="arc-caption">
-        <span className="arc-legend">People at your starting mark ({score})</span>
+        {offArcCount > 0 ? <span className="arc-omitted">Grey dots illustrate the weighted share without a mark.</span>
+          : <span className="arc-legend">People at your starting mark ({score})</span>}
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}
     </figure>

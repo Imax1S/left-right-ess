@@ -5,14 +5,14 @@ import type { HighlightFilter } from './highlights.ts';
 
 export type Answers = Readonly<Partial<Record<number, Choice>>>;
 type Progress = { score: Score; answers: Answers };
-const offArcSteps = ['engagement', 'trust', 'influence', 'turnout'] as const;
-const actTwoSteps = ['axis-prompt', 'quadrant', 'missing-prompt', ...offArcSteps] as const;
+const offArcSteps = ['missing-prompt', 'engagement', 'trust', 'influence', 'turnout'] as const;
+const actTwoSteps = ['axis-prompt', 'quadrant', ...offArcSteps] as const;
 type ActTwoStep = (typeof actTwoSteps)[number];
 
 export type Session =
   | { step: 'scale'; score: Score | null }
   | { step: 'among'; score: Score; highlight: HighlightFilter | null }
-  | (Progress & { step: 'question'; index: number })
+  | (Progress & { step: 'question'; index: number; fromQuadrant?: true })
   | (Progress & { step: 'result'; index: number; option: Choice })
   | (Progress & { step: ActTwoStep })
   | (Progress & { step: 'conclusion' });
@@ -30,12 +30,17 @@ export function isActTwoStep(step: Session['step']) {
 }
 
 export function isOffArcStep(step: Session['step']) {
-  return offArcSteps.some(stage => stage === step);
+  return step !== 'missing-prompt' && offArcSteps.some(stage => stage === step);
 }
 
 export function createSessionReducer(questions: readonly string[], countries: readonly string[], includeActTwo = false) {
   const countryCodes = new Set(countries);
-  const actAfter = includeActTwo ? questions.indexOf('understanding') - 1 : -1;
+  const vote = includeActTwo ? questions.indexOf('vote') : -1;
+  const hasQuadrant = vote > 0 && ['inequality', 'migration'].every(id => {
+    const index = questions.indexOf(id);
+    return index >= 0 && index < vote;
+  });
+  const hasOffArc = vote >= 0 && vote + 1 < questions.length;
   return (state: Session, action: StoryAction): Session => {
     const { step, score } = state;
     switch (step) {
@@ -57,12 +62,11 @@ export function createSessionReducer(questions: readonly string[], countries: re
       case 'question':
         if (action.type === 'answer') {
           const answers = { ...state.answers, [state.index]: action.option };
-          return { ...state, step: 'result', option: action.option, answers };
+          return { step: 'result', score, index: state.index, option: action.option, answers };
         }
         if (action.type === 'back') {
-          if (actAfter >= 0 && state.index === actAfter + 1) {
-            return { step: 'turnout', score, answers: state.answers };
-          }
+          if (hasQuadrant && state.index === vote) return { step: 'quadrant', score, answers: state.answers };
+          if (hasOffArc && state.index === vote + 1) return { step: 'turnout', score, answers: state.answers };
           return state.index === 0
             ? { step: 'among', score, highlight: null }
             : { step: 'question', score, index: state.index - 1, answers: state.answers };
@@ -71,7 +75,8 @@ export function createSessionReducer(questions: readonly string[], countries: re
       case 'result':
         if (action.type === 'back') return { step: 'question', score, index: state.index, answers: state.answers };
         if (action.type === 'next') {
-          if (state.index === actAfter) return { step: 'axis-prompt', score, answers: state.answers };
+          if (hasQuadrant && state.index === vote - 1) return { step: 'axis-prompt', score, answers: state.answers };
+          if (hasOffArc && state.index === vote) return { step: 'missing-prompt', score, answers: state.answers };
           return state.index + 1 < questions.length
             ? { step: 'question', score, index: state.index + 1, answers: state.answers }
             : { step: 'conclusion', score, answers: state.answers };
@@ -86,16 +91,20 @@ export function createSessionReducer(questions: readonly string[], countries: re
         if (action.type === 'restart') return initialSession;
         break;
       default: {
-        const position = actTwoSteps.indexOf(step);
+        const position = offArcSteps.findIndex(stage => stage === step);
         if (action.type === 'next') {
-          const next = actTwoSteps[position + 1];
-          return next ? { ...state, step: next } : { ...state, step: 'question', index: actAfter + 1 };
+          if (step === 'axis-prompt') return { ...state, step: 'quadrant' };
+          if (step === 'quadrant') return { ...state, step: 'question', index: vote, fromQuadrant: true };
+          const next = offArcSteps[position + 1];
+          return next ? { ...state, step: next } : { ...state, step: 'question', index: vote + 1 };
         }
         if (action.type === 'back') {
-          const previous = actTwoSteps[position - 1];
+          if (step === 'quadrant') return { ...state, step: 'axis-prompt' };
+          const previous = offArcSteps[position - 1];
           if (previous) return { ...state, step: previous };
-          const option = state.answers[actAfter];
-          if (option) return { step: 'result', score, index: actAfter, option, answers: state.answers };
+          const index = step === 'axis-prompt' ? vote - 1 : vote;
+          const option = state.answers[index];
+          if (option) return { step: 'result', score, index, option, answers: state.answers };
         }
       }
     }

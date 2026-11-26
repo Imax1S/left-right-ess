@@ -12,13 +12,17 @@ test('the closing circle retains every original dot and leaves space for the rea
   const dots = Array.from({ length: 100 }, (_, id) => ({
     id: String(id), score: scores[id % scores.length], country: 'EE', answers: {},
   }));
-  const circle = circleLayout(dots);
-  assert.equal(circle.dots.size, dots.length);
-  for (const dot of dots) {
-    const { x, y, r } = circle.dots.get(dot.id)!;
+  const offArc = Array.from({ length: 14 }, (_, index) => 'off-arc-' + index);
+  const circle = circleLayout(dots, offArc);
+  assert.equal(circle.dots.size, dots.length + offArc.length);
+  const occupied = new Set<string>();
+  for (const id of [...dots.map(dot => dot.id), ...offArc]) {
+    const { x, y, r } = circle.dots.get(id)!;
+    occupied.add(x + ':' + y);
     assert.ok(x >= r && x <= viewBox.width - r && y >= r && y <= comparisonHeight - r);
     assert.ok(Math.hypot(x - circle.marker.x, y - circle.marker.y) >= r + 20);
   }
+  assert.equal(occupied.size, dots.length + offArc.length);
 });
 
 test('the four corners retain the sample and place neutral answers between the two rows', () => {

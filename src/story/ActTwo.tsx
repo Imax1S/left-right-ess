@@ -13,11 +13,7 @@ export function UnplacedShare({ data }: { data: DisillusionedSummary }) {
       <strong>{formatShare(percent)}</strong>
       <span>had no recorded<br />left–right mark</span>
     </div>
-    <div className="unplaced-dots" aria-hidden="true">
-      {Array.from({ length: Math.round(percent) }, (_, index) => <span key={index} />)}
-    </div>
     <p>{integer.format(data.unplacedCount)} of {integer.format(data.eligibleTotalCount)} respondents across the countries in this story. The percentage is weighted.</p>
-    <p>Each dot represents about 1% of respondents.</p>
   </div>;
 }
 
@@ -43,18 +39,6 @@ export const offArcQuestions = {
 } as const;
 type OffArcQuestion = (typeof offArcQuestions)[keyof typeof offArcQuestions];
 
-export function OffArcAnswerPlot({ share }: { share: number | null }) {
-  return <figure className="off-arc-plot">
-    {share === null ? <p>No recorded answers</p> : <>
-      <div className="off-arc-dots" aria-hidden="true">
-        {Array.from({ length: 100 }, (_, index) =>
-          <span key={index} className={index < Math.round(share) ? 'is-first' : undefined} />)}
-      </div>
-      <figcaption>Each dot represents about 1% of the answers from people without a mark.</figcaption>
-    </>}
-  </figure>;
-}
-
 export function OffArcAnswerDetails({ question, data, onContinue }: {
   question: OffArcQuestion; data: DisillusionedSummary; onContinue: () => void;
 }) {
@@ -75,6 +59,8 @@ export function OffArcAnswerDetails({ question, data, onContinue }: {
     <p className="act-note">{question.field === 'votedPercent'
       ? 'Weighted shares among eligible voters who answered yes or no.'
       : 'Weighted shares among respondents who answered this question.'}</p>
+    {question.field === 'votedPercent' && <p>{(data.groups.unplaced.noSayPercent ?? 0) > 50 &&
+      'Many said they had little or no say in politics. '}There’s one last question we can ask everyone.</p>}
     <Continue onClick={onContinue}>{question.next}</Continue>
   </div>;
 }
@@ -138,7 +124,7 @@ export function UnderstandingResult({ data, answer, onContinue }: {
         </div>
       </div>)}
     </div>
-    <p className="act-note">Weighted shares who chose “More like me”. The circle uses the same dots as the arc. The comparison also includes people without a mark.</p>
+    <p className="act-note">Weighted shares who chose “More like me”. Grey dots illustrate the share of people without a recorded mark.</p>
     <Continue onClick={onContinue}>See the takeaway</Continue>
   </div>;
 }

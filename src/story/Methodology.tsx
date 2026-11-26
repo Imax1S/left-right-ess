@@ -148,7 +148,7 @@ export function Methodology({ data }: { data: StoryData }) {
         <summary>Who is off the arc and how we made the four corners</summary>
         <p>The off-arc comparison includes respondents within the same age and weight criteria who had no recorded mark from 0 to 10. Voting shares use yes or no answers among eligible voters. Low trust in parliament is 0–4 on its 0–10 scale. The little-or-no-say share combines the two lowest responses about political influence.</p>
         <p>The four corners cross agreement or disagreement about reducing income differences with admitting many or some, or a few or no, immigrants from poorer countries outside Europe. The table uses the weighted distribution among respondents in the corners. In the sample illustration, neutral income answers sit between the rows and respondents without both answers sit below the grid.</p>
-        <p>The closing circle uses the same sample as the arc. Its comparison uses all valid answers to the understanding question, including from respondents without a mark. “More like me” combines the top three of the six original responses.</p>
+        <p>The closing circle combines the sample on the arc with grey dots illustrating the weighted share without a mark. When we show answers from that group, the shading illustrates the weighted answer shares. The final comparison uses all valid answers. “More like me” combines the top three of the six original responses.</p>
       </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}
