@@ -52,6 +52,8 @@ export interface SurveySource {
 export interface EngagementFlags {
   voted?: boolean;
   noSay?: boolean;
+  lowTrust?: boolean;
+  understanding?: boolean;
 }
 
 export interface EngagementTallies {
@@ -61,11 +63,17 @@ export interface EngagementTallies {
   votedWeight: number;
   noSayWeight: number;
   sayWeight: number;
+  lowTrustWeight: number;
+  trustWeight: number;
+  understandingYesWeight: number;
+  understandingWeight: number;
 }
 
 export interface GroupEngagement {
   votedPercent: number | null;
   noSayPercent: number | null;
+  lowTrustPercent: number | null;
+  understandingPercent: number | null;
 }
 
 export interface DisillusionedSummary {

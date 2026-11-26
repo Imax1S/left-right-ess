@@ -1,12 +1,25 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { arcLayout, answerLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
+import { arcLayout, answerLayout, circleLayout, comparisonHeight, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
 import { quadrantLayout } from '../src/visualization/quadrantLayout.ts';
 
 function question(id: string, neutral?: string) {
   return { id, options: { a: 'Agree', neutral, b: 'Disagree' } };
 }
+
+test('the closing circle retains every original dot and leaves space for the reader', () => {
+  const dots = Array.from({ length: 100 }, (_, id) => ({
+    id: String(id), score: scores[id % scores.length], country: 'EE', answers: {},
+  }));
+  const circle = circleLayout(dots);
+  assert.equal(circle.dots.size, dots.length);
+  for (const dot of dots) {
+    const { x, y, r } = circle.dots.get(dot.id)!;
+    assert.ok(x >= r && x <= viewBox.width - r && y >= r && y <= comparisonHeight - r);
+    assert.ok(Math.hypot(x - circle.marker.x, y - circle.marker.y) >= r + 20);
+  }
+});
 
 test('the four corners retain the sample and place neutral answers between the two rows', () => {
   const dots = [

@@ -3,10 +3,15 @@ import type { Answer, DisillusionedSummary, EngagementFlags, EngagementTallies, 
   QuadrantSummary, Respondent } from './model.ts';
 
 export function emptyEngagement(): EngagementTallies {
-  return { count: 0, weight: 0, votedYesWeight: 0, votedWeight: 0, noSayWeight: 0, sayWeight: 0 };
+  return {
+    count: 0, weight: 0, votedYesWeight: 0, votedWeight: 0, noSayWeight: 0, sayWeight: 0,
+    lowTrustWeight: 0, trustWeight: 0, understandingYesWeight: 0, understandingWeight: 0,
+  };
 }
 
-export function tallyEngagement(tallies: EngagementTallies, weight: number, { voted, noSay }: EngagementFlags) {
+export function tallyEngagement(
+  tallies: EngagementTallies, weight: number, { voted, noSay, lowTrust, understanding }: EngagementFlags,
+) {
   tallies.count++;
   tallies.weight += weight;
   if (voted !== undefined) {
@@ -16,6 +21,14 @@ export function tallyEngagement(tallies: EngagementTallies, weight: number, { vo
   if (noSay !== undefined) {
     tallies.sayWeight += weight;
     if (noSay) tallies.noSayWeight += weight;
+  }
+  if (lowTrust !== undefined) {
+    tallies.trustWeight += weight;
+    if (lowTrust) tallies.lowTrustWeight += weight;
+  }
+  if (understanding !== undefined) {
+    tallies.understandingWeight += weight;
+    if (understanding) tallies.understandingYesWeight += weight;
   }
 }
 
@@ -39,6 +52,8 @@ export function summarizeEngagement(people: readonly Respondent[], unplaced: Eng
   const shares = (group: EngagementTallies) => ({
     votedPercent: percent(group.votedYesWeight, group.votedWeight),
     noSayPercent: percent(group.noSayWeight, group.sayWeight),
+    lowTrustPercent: percent(group.lowTrustWeight, group.trustWeight),
+    understandingPercent: percent(group.understandingYesWeight, group.understandingWeight),
   });
   return {
     unplacedCount: unplaced.count,

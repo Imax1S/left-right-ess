@@ -87,6 +87,17 @@
 .quadrant-legend .left::before { border-radius: 50%; }
 .quadrant-legend .right::before { rotate: 45deg; }
 
+.circle-outline { fill: none; stroke: #c6b99f; stroke-width: 1.3px; }
+.circle-core { fill: var(--cream); }
+.circle-number, .circle-label { fill: var(--ink); text-anchor: middle; }
+.circle-number { font: 840 23px var(--display); letter-spacing: -0.06em; }
+.circle-label { font: 820 10px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
+.is-understanding .respondent { transition-duration: 290ms, 820ms; transition-delay: 0ms, var(--delay); }
+.is-understanding .reader-marker { transition-duration: 760ms; }
+.understanding-result .result-rows { margin-top: 0; }
+.understanding-result .result-row.unplaced { color: #575956; }
+.understanding-result h2 { font: 790 clamp(15px, 3.5vw, 20px)/1.25 var(--display); }
+
 @media (min-width: 800px) {
   .step-act-two .story-grid { gap: 15px clamp(24px, 4vw, 72px); }
 }

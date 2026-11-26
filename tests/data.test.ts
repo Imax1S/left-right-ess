@@ -69,6 +69,9 @@ test('the second act keeps unplaced people out of the arc and uses complete dire
   assert.equal(engagement.eligibleTotalCount, data.eligibleCount + engagement.unplacedCount);
   assert.equal(engagement.unplacedSharePercent.toFixed(1), '11.9');
   assert.equal(engagement.groups.unplaced.votedPercent?.toFixed(1), '52.8');
+  assert.equal(engagement.groups.unplaced.lowTrustPercent?.toFixed(1), '59.8');
+  assert.equal(engagement.groups.unplaced.understandingPercent?.toFixed(1), '84.5');
+  assert.equal(engagement.groups.left.understandingPercent?.toFixed(1), '91.1');
   assert.ok(engagement.groups.unplaced.noSayPercent! > engagement.groups.centre.noSayPercent!);
   assert.ok(engagement.groups.centre.votedPercent! < engagement.groups.right.votedPercent!);
   const rights = Object.values(quadrant.byGroup.right);

@@ -50,7 +50,7 @@ export function createSessionReducer(questions: readonly string[], countries: re
         }
         if (action.type === 'back') {
           if (actAfter >= 0 && state.index === actAfter + 1) {
-            return { step: 'quadrant', score, answers: state.answers };
+            return { step: 'engagement', score, answers: state.answers };
           }
           return state.index === 0
             ? { step: 'among', score, highlight: null }
@@ -60,21 +60,21 @@ export function createSessionReducer(questions: readonly string[], countries: re
       case 'result':
         if (action.type === 'back') return { step: 'question', score, index: state.index, answers: state.answers };
         if (action.type === 'next') {
-          if (state.index === actAfter) return { step: 'engagement', score, answers: state.answers };
+          if (state.index === actAfter) return { step: 'quadrant', score, answers: state.answers };
           return state.index + 1 < questions.length
             ? { step: 'question', score, index: state.index + 1, answers: state.answers }
             : { step: 'conclusion', score, answers: state.answers };
         }
         break;
-      case 'engagement':
-        if (action.type === 'next') return { ...state, step: 'quadrant' };
+      case 'quadrant':
+        if (action.type === 'next') return { ...state, step: 'engagement' };
         if (action.type === 'back') {
           const option = state.answers[actAfter];
           if (option) return { step: 'result', score, index: actAfter, option, answers: state.answers };
         }
         break;
-      case 'quadrant':
-        if (action.type === 'back') return { ...state, step: 'engagement' };
+      case 'engagement':
+        if (action.type === 'back') return { ...state, step: 'quadrant' };
         if (action.type === 'next') return { ...state, step: 'question', index: actAfter + 1 };
         break;
       case 'conclusion':

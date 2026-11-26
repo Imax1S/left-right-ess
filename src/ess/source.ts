@@ -54,6 +54,8 @@ export async function ess11Source(
     climateCause: field('ccnthum'),
     vote: field('vote'),
     influence: field('psppipla'),
+    parliament: field('trstprl'),
+    understanding: field('ipudrsta'),
     gender: field('gndr'),
     religiosity: extract.source.fields.indexOf('rlgdgr'),
     education: extract.source.fields.indexOf('eisced'),
@@ -88,9 +90,13 @@ export async function ess11Source(
           const surveyWeight = weight * country.populationWeight;
           const vote = row[indexes.vote];
           const influence = row[indexes.influence];
+          const trust = classify('scale', row[indexes.parliament], null);
+          const understanding = classify('value', row[indexes.understanding], null);
           const engagement = {
             voted: vote === 1 ? true : vote === 2 ? false : undefined,
             noSay: influence !== null && influence >= 1 && influence <= 5 ? influence <= 2 : undefined,
+            lowTrust: trust === 'missing' ? undefined : trust === 'a',
+            understanding: understanding === 'missing' ? undefined : understanding === 'a',
           };
           if (score === null || !isScore(score)) {
             tallyEngagement(unplaced, surveyWeight, engagement);

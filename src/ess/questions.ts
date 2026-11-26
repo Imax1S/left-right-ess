@@ -176,7 +176,7 @@ export const ess11Questions = [
     field: "ipudrsta",
     type: "value",
     short: "Understanding others",
-    title: "How like you is someone who values understanding people who are different, even when they disagree?",
+    title: "How much like you is someone who wants to understand people who are different, even when they disagree?",
     labels: ["More like me · 1–3", "Less like me · 4–6"],
     note: "Six responses, grouped 1–3 versus 4–6. Response 4 means a little like me, not disagreement. This is a value question, not a direct measure of attitudes towards another political camp.",
   },

@@ -6,12 +6,35 @@ interface PlacedDot extends Point { person: Dot; r: number }
 
 export const viewBox = { width: 400, height: 242 };
 export const comparisonHeight = 264;
+export const circleCentre: Point = { x: viewBox.width / 2, y: comparisonHeight / 2 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
 const readerClearance = 21;
 export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
+
+export function circleLayout(dots: readonly Dot[]) {
+  const marker = { x: circleCentre.x + 105, y: circleCentre.y };
+  const gap = 0.3;
+  const sweep = 2 * Math.PI - 2 * gap;
+  const outerCount = Math.round(dots.length * 0.55);
+  const sizes = [outerCount, dots.length - outerCount];
+  const positions = new Map<string, Point & { r: number }>();
+  for (const [index, radius] of [113, 91].entries()) {
+    const count = sizes[index];
+    if (!count) continue;
+    const r = Math.min(5, radius * Math.sin(sweep / (2 * Math.max(count, 2))) * 0.77);
+    for (let slot = 0; slot < count; slot++) {
+      const angle = gap + sweep * (slot + 0.5) / count;
+      const person = dots[slot + (index === 0 ? 0 : sizes[0])];
+      positions.set(person.id, {
+        x: circleCentre.x + radius * Math.cos(angle), y: circleCentre.y + radius * Math.sin(angle), r,
+      });
+    }
+  }
+  return { dots: positions, marker };
+}
 
 function polar(angle: number, radius: number): Point {
   return {

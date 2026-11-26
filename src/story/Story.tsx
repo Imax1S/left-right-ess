@@ -6,7 +6,8 @@ import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
 import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { EngagementDetails, QuadrantDetails, QuadrantLegend, UnplacedShare } from './ActTwo.tsx';
+import { EngagementDetails, QuadrantDetails, QuadrantLegend, UnderstandingResult,
+  understandingRange, UnplacedShare } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession } from './session.ts';
@@ -41,6 +42,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     choice: state.option,
     alignment: answerAlignment(question.stats, state.option, state.score),
   } : null;
+  const closingCircle = hasActTwo && question?.id === 'understanding';
+  const understandingCircle = closingCircle ? {
+    range: result && data.disillusioned ? understandingRange(data.disillusioned) : null,
+  } : undefined;
   const highlight = state.step === 'among' ? state.highlight : null;
   const matches = highlight
     ? data.dots.filter(dot => matchesHighlights(dot, highlight))
@@ -95,6 +100,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   } else if (state.step === 'question' && question) {
     heading = question.prompt;
     controls = <QuestionControls question={question} onAnswer={option => navigate({ type: 'answer', option })} />;
+  } else if (closingCircle && result && data.disillusioned) {
+    heading = 'Understanding is common ground.';
+    controls = <UnderstandingResult data={data.disillusioned} answer={result.question.options[result.choice] ?? ''}
+      onContinue={() => navigate({ type: 'next' })} />;
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
     const startsSecondAct = hasActTwo && data.questions[index + 1]?.id === 'understanding';
@@ -103,26 +112,26 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
-      continueLabel={final ? 'See the takeaway' : startsSecondAct ? 'Look beyond the arc' : 'Next question'}
+      continueLabel={final ? 'See the takeaway' : startsSecondAct ? 'Try two axes' : 'Next question'}
       onContinue={() => navigate({ type: 'next' })} />;
   } else if (state.step === 'engagement' && data.disillusioned) {
-    heading = 'Who’s missing from the arc?';
+    heading = 'Who did the scale leave out?';
     chartNote = <UnplacedShare data={data.disillusioned} />;
     controls = <EngagementDetails data={data.disillusioned} onContinue={() => navigate({ type: 'next' })} />;
   } else if (state.step === 'quadrant' && data.quadrant) {
-    heading = 'Two answers. Four corners.';
+    heading = 'What if we add a second axis?';
     chartNote = <QuadrantLegend />;
     controls = <QuadrantDetails data={data.quadrant} onContinue={() => navigate({ type: 'next' })} />;
   }
 
-  if (question) {
+  if (question && !closingCircle) {
     cards = <>
       <Fact value={index + 1} caption={`Of ${data.questions.length} questions`} />
       <Fact value={question.topic} caption="Topic" />
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}${actTwoScreen ? ' step-act-two' : ''}`}>
+  return <main hidden={showMethod} className={`story-page step-${step}${question ? ' step-comparison' : ''}${actTwoScreen || closingCircle ? ' step-act-two' : ''}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -139,7 +148,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
         <div className="story-plot">
           <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
             comparison={question !== null || actTwoScreen} result={result} engagement={step === 'engagement'}
-            quadrant={quadrant} onPlace={step === 'scale' ? place : undefined} />
+            quadrant={quadrant} understandingCircle={understandingCircle} onPlace={step === 'scale' ? place : undefined} />
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
           {chartNote}
         </div>
@@ -171,6 +180,7 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
   const groupFullMatch = patterns?.fullMatchPercentByGroup?.[startingSide] ?? null;
   const understanding = data.questions.find(question => question.id === 'understanding');
   const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
+  const offArcSharedValue = (data.disillusioned?.groups.unplaced.understandingPercent ?? 0) > 50;
   return <main hidden={hidden} className="story-page conclusion-page">
     <header className="story-header">
       <Wordmark />
@@ -242,8 +252,12 @@ function Conclusion({ data, score, answers, headingRef, hidden, onBack, onRestar
       </section>}
     </details>
     <div className="conclusion-close">
-      <p>{sharedValue && 'Across the scale, most people saw themselves as someone who values understanding others. '}
-        Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.</p>
+      <p>{sharedValue
+        ? (offArcSharedValue
+          ? 'Even among people who gave no political label, most saw themselves as someone who tries to understand people who are different. '
+          : 'Across the scale, most saw themselves as someone who tries to understand people who are different. ')
+          + 'A label gives you a rough clue about where someone stands. Ask what they think and listen to their answer.'
+        : 'Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.'}</p>
       <Continue onClick={onRestart}>Start over</Continue>
     </div>
     <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>

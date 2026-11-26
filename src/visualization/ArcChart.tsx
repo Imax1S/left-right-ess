@@ -4,7 +4,7 @@ import { quadrantKeys, scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, comparisonHeight, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import { quadrantCells, quadrantLayout } from './quadrantLayout.ts';
@@ -17,6 +17,7 @@ interface Props {
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
   engagement?: boolean;
   quadrant?: { inequality?: Choice; migration?: Choice };
+  understandingCircle?: { range: string | null };
   onPlace?: (score: Score) => void;
 }
 
@@ -38,7 +39,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, engagement, quadrant, onPlace }: Props) {
+export function ArcChart({ dots, score, highlightedIds, comparison, result, engagement, quadrant, understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -48,12 +49,15 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
   const question = result?.question;
   const choice = result?.choice;
   const destination = result?.alignment.score;
+  const inCircle = understandingCircle !== undefined;
   const groups = useMemo(
-    () => question && choice && destination !== undefined
+    () => !inCircle && question && choice && destination !== undefined
       ? answerLayout(dots, question, choice, destination, arc.radius)
       : null,
-    [dots, question, choice, destination, arc.radius],
+    [dots, inCircle, question, choice, destination, arc.radius],
   );
+  const circle = useMemo(() => inCircle ? circleLayout(dots) : null, [dots, inCircle]);
+  const range = understandingCircle?.range;
   const inequalityAnswer = quadrant?.inequality;
   const migrationAnswer = quadrant?.migration;
   const inQuadrants = quadrant !== undefined;
@@ -63,7 +67,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
   );
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
-  const selected = grid?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
+  const selected = circle?.marker ?? grid?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = `translate(${selected.x}px, ${selected.y}px)`;
   const captions = groups && (groups.middle
     ? [groups.bands[0], groups.middle, groups.bands[1]]
@@ -74,7 +78,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
   ].filter(Boolean).join(' · ');
   const arcPositions = new Map(arc.dots.map(dot => [dot.person.id, dot]));
   const answerPositions = groups && new Map(groups.dots.map(dot => [dot.person.id, dot]));
-  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${engagement ? ' is-engagement' : ''}${grid ? ' is-quadrant' : ''}`;
+  const figureClass = `arc-figure${groups ? ' is-result' : ''}${onPlace ? ' is-interactive' : ''}${engagement ? ' is-engagement' : ''}${grid ? ' is-quadrant' : ''}${circle ? ' is-understanding' : ''}`;
   const pointerLine = pointers && `M ${pointers.start.x} ${pointers.start.y} L ${pointers.end.x} ${pointers.end.y}`;
   const dragTargetStyle = pointers ? {
     left: `${pointers.start.x / viewBox.width * 100}%`,
@@ -131,7 +135,9 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
     .join(', ');
 
   return (
-    <figure className={figureClass} aria-label={grid
+    <figure className={figureClass} aria-label={circle
+      ? 'The same respondents and your marker form a circle.' + (range ? ' The weighted share who chose “More like me” ranges from ' + range + ' across the four groups.' : '')
+      : grid
       ? 'The same respondents grouped by answers about income and immigration. Shapes identify their starting political groups.'
       : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
@@ -140,7 +146,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
-          <g className={groups || grid ? 'chart-layer is-hidden' : 'chart-layer'}>
+          <g className={groups || grid || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
             {sides.map(side => <path key={side} className={side} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
             {score !== null && !engagement && <path className="score-band" d={scoreBand(score)} />}
@@ -165,14 +171,25 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
             })}
             <path d="M 10 130 H 196 M 204 130 H 390" className="quadrant-neutral" />
           </g>
+          <g className={circle ? 'chart-layer circle-canvas' : 'chart-layer circle-canvas is-hidden'}>
+            <circle cx={circleCentre.x} cy={circleCentre.y} r="124" className="circle-outline" />
+            <circle cx={circleCentre.x} cy={circleCentre.y} r="82" className="circle-core" />
+            {range && <text x={circleCentre.x} y={circleCentre.y - 7} className="circle-number">
+              {range}
+              <tspan x={circleCentre.x} dy="20" className="circle-label">“More like me”</tspan>
+              <tspan x={circleCentre.x} dy="14" className="circle-label">across the four groups</tspan>
+            </text>}
+          </g>
           {dots.map((person, index) => {
+            const circlePoint = circle?.dots.get(person.id);
             const gridPoint = grid?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
-            const point = gridPoint ?? answerPoint ?? arcPositions.get(person.id)!;
+            const point = circlePoint ?? gridPoint ?? answerPoint ?? arcPositions.get(person.id)!;
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
-            const opacity = gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
+            const opacity = circlePoint ? (result && person.answers.understanding !== 'a' ? 0.35 : 0.94)
+              : gridPoint ? (gridPoint.missing ? 0.37 : 0.9)
               : engagement ? (side === 'centre' ? 0.92 : 0.29)
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
@@ -180,11 +197,11 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
             const style: MotionStyle = {
               transform: `translate(${point.x}px, ${point.y}px)`,
               opacity,
-              '--delay': groups || grid ? `${(index % 15) * 20}ms` : '0ms',
+              '--delay': groups || grid || circle ? `${(index % 15) * 20}ms` : '0ms',
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
-              data-same-score={sameScore && !grid && !engagement ? 'true' : undefined}>
+              data-same-score={sameScore && !grid && !engagement && !circle ? 'true' : undefined}>
               <RespondentShape side={side} radius={point.r} />
             </g>;
           })}
@@ -211,7 +228,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, enga
           ))}
         </div>}
       </div>
-      {!canPlace && !engagement && !grid && score !== null && <figcaption className="arc-caption">
+      {!canPlace && !engagement && !grid && !circle && score !== null && <figcaption className="arc-caption">
         <span className="arc-legend">People at your starting mark ({score})</span>
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}

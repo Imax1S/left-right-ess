@@ -62,18 +62,18 @@ test('each selection replaces the previous filter, including country', () => {
   assert.deepEqual(reduce(question, { type: 'back' }), among);
 });
 
-test('the second act leads from the vote result to understanding and supports back navigation', () => {
+test('the second act tries two axes before looking off the scale, in both directions', () => {
   const act = createSessionReducer(['inequality', 'migration', 'adoption', 'climate', 'vote', 'understanding'], [], true);
   const vote = { step: 'result', score: 8, index: 4, option: 'b', answers: { 0: 'neutral', 1: 'a', 4: 'b' } } as const;
-  const engagement = act(vote, { type: 'next' });
-  assert.deepEqual(engagement, { step: 'engagement', score: 8, answers: vote.answers });
-  assert.deepEqual(act(engagement, { type: 'back' }), vote);
-  const quadrant = act(engagement, { type: 'next' });
+  const quadrant = act(vote, { type: 'next' });
   assert.deepEqual(quadrant, { step: 'quadrant', score: 8, answers: vote.answers });
-  assert.deepEqual(act(quadrant, { type: 'back' }), engagement);
-  const understanding = act(quadrant, { type: 'next' });
+  assert.deepEqual(act(quadrant, { type: 'back' }), vote);
+  const engagement = act(quadrant, { type: 'next' });
+  assert.deepEqual(engagement, { step: 'engagement', score: 8, answers: vote.answers });
+  assert.deepEqual(act(engagement, { type: 'back' }), quadrant);
+  const understanding = act(engagement, { type: 'next' });
   assert.deepEqual(understanding, { step: 'question', score: 8, index: 5, answers: vote.answers });
-  assert.deepEqual(act(understanding, { type: 'back' }), quadrant);
+  assert.deepEqual(act(understanding, { type: 'back' }), engagement);
   const result = act(understanding, { type: 'answer', option: 'a' });
   assert.deepEqual(act(result, { type: 'next' }), {
     step: 'conclusion', score: 8, answers: { ...vote.answers, 5: 'a' },
