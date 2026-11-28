@@ -141,8 +141,9 @@ export const ess11Questions = [
     type: "policy",
     short: "Equal pay",
     title: "Should companies be fined for paying men more than women for the same work?",
-    labels: ["In favour", "Against"],
-    note: "Five response categories: strongly / somewhat in favour versus somewhat / strongly against. Neither is shown separately.",
+    labels: ["Yes", "No"],
+    neutralLabel: "Not sure",
+    note: "“Yes” combines strongly and somewhat in favour. “No” combines strongly and somewhat against. “Not sure” represents the survey’s neutral answer, neither in favour nor against.",
   },
   {
     id: "climateCause",

@@ -129,7 +129,11 @@ export async function ess11Source(
         questions: questions.map(question => ({
           id: question.id, topic: question.short, prompt: question.title,
           ...('portrait' in question && { portrait: question.portrait }),
-          options: { a: question.labels[0], neutral: middleLabels[question.type], b: question.labels[1] },
+          options: {
+            a: question.labels[0],
+            neutral: 'neutralLabel' in question ? question.neutralLabel : middleLabels[question.type],
+            b: question.labels[1],
+          },
           grouping: question.note,
         })),
         people,
