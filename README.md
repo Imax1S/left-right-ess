@@ -1,10 +1,14 @@
 # Left. Right.
 
-An interactive story about how much a political label tells you. Pick your place on the left–right scale, answer seven questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
+How much can you tell about someone from where they put themselves on a political scale? In *Left. Right.*, you pick your own place on that scale, answer seven questions from the European Social Survey, and watch the same respondents regroup around their answers.
 
-**[Play the story](https://imax1s.github.io/left-right-ess/)** · [Explore the data and methodology](https://imax1s.github.io/left-right-ess/#/about)
+**[Play the story](https://imax1s.github.io/left-right-ess/)** · [Drafts and process notes](docs/process.md) · [Data and methodology](https://imax1s.github.io/left-right-ess/#/about)
 
-![Answer reveal for the income gap question. The reader's orange marker moves into the Agree group. In the survey comparison, 79.1% on the left, 71% at the midpoint and 61.9% on the right chose Agree.](docs/readme/arc-preview.webp)
+## How the story took shape
+
+The first published version followed survey respondents through an illustrated scrollytelling piece. In the redesign, the political scale became a seating arc and the reader got a seat of their own. A respondent keeps their original shape and colour as they move into an answer group, so a reader can see where people from different parts of the scale land together.
+
+The [drafts and process notes](docs/process.md) include the original Miro brainstorm, the reader’s path and question shortlist, screenshots of early versions, and the source for an abandoned four-quadrant ending.
 
 ## The visual identity
 
@@ -63,8 +67,6 @@ The build reads the compact extract in [data/ess11.json](data/ess11.json). To re
 ### GitHub Pages
 
 Select **GitHub Actions** as the Pages source. Pull requests and pushes to `main` run verification. Run **Build and publish** manually from the default branch to deploy `dist/`.
-
-The [arc-before-centre-redesign snapshot](https://github.com/Imax1S/left-right-ess/tree/arc-before-centre-redesign) pins the published two-group edition before work on the centre and the finale.
 
 ### Credits
 
