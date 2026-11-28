@@ -5,6 +5,7 @@ import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts
 import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
 import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, YesControl,
   formatShare, integer } from './controls.tsx';
+import { trackStoryProgress } from './analytics.ts';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { OffArcAnswerDetails, offArcQuestions, UnderstandingComparison, UnderstandingResult } from './ActTwo.tsx';
@@ -74,6 +75,10 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       window.scrollTo({ top: 0, behavior: animateScroll ? 'smooth' : 'instant' });
     }
   }, [step, index, showMethod, closingCircle]);
+
+  useEffect(() => {
+    if (!showMethod) trackStoryProgress(step, index);
+  }, [step, index, showMethod]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
     focusOnChange.current = true;

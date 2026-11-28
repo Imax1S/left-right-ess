@@ -1,6 +1,7 @@
 import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { StoryData } from './domain/model.ts';
+import { startAnalytics } from './story/analytics.ts';
 import { Methodology } from './story/Methodology.tsx';
 import { Story, Wordmark } from './story/Story.tsx';
 import './style.css';
@@ -24,6 +25,8 @@ function App({ data }: { data: StoryData }) {
     {showMethod && <Methodology data={data} />}
   </>;
 }
+
+startAnalytics(import.meta.env.VITE_UMAMI_WEBSITE_ID);
 
 const root = createRoot(document.getElementById('root')!);
 root.render(<main className="status"><Wordmark /><p role="status">Loading the survey…</p></main>);
