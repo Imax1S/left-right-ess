@@ -40,6 +40,8 @@
   text-transform: uppercase;
 }
 .method-lead { max-width: 35ch; color: var(--muted); font-size: clamp(15px, 2.2vw, 20px); }
+.method-byline { color: var(--muted); font-size: 14px; }
+.method-byline strong { color: var(--ink); white-space: nowrap; }
 
 .method-arc {
   display: grid;

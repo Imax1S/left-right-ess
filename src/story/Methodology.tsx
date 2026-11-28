@@ -73,6 +73,7 @@ export function Methodology({ data, privacyLinks }: { data: StoryData; privacyLi
         <p className="method-source">European Social Survey · {data.source.years}</p>
         <h1 className="story-heading" tabIndex={-1} id="method-heading">Data &amp; <mark>methodology</mark></h1>
         <p className="method-lead">Follow the survey from interview records to the dots on the chart and the numbers behind each answer.</p>
+        <p className="method-byline">Created by <strong lang="ru">Демид Харламов</strong> and <strong lang="ru">Максим Ионко</strong></p>
       </div>
       <SampleArc dots={data.dots} />
     </section>
