@@ -6,6 +6,7 @@ export const sides = ['left', 'centre', 'right'] as const;
 export type Side = (typeof sides)[number];
 export const sideLabels = { left: 'Left', centre: 'Centre (5)', right: 'Right' } as const;
 export const choices = ['a', 'neutral', 'b'] as const;
+export const outerChoices = [choices[0], choices[2]] as const;
 export type Choice = (typeof choices)[number];
 export type Answer = Choice | 'missing' | 'other';
 
@@ -33,7 +34,7 @@ export interface Question {
 }
 
 export function questionChoices(question: Pick<Question, 'options'>): readonly Choice[] {
-  return question.options.neutral === undefined ? ['a', 'b'] : choices;
+  return question.options.neutral === undefined ? outerChoices : choices;
 }
 
 export interface Country {

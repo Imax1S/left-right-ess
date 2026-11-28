@@ -104,17 +104,21 @@ test('answer groups share the arc footprint and keep the reader marker clear', (
   }
 });
 
-test('puts the selected answer on the side of the reader’s destination', () => {
+test('keeps the outer answer order for either choice and reader destination', () => {
   const dots = [
     { id: '1', score: 2 as const, country: 'EE', answers: { q: 'a' as const } },
     { id: '2', score: 8 as const, country: 'EE', answers: { q: 'b' as const } },
   ];
-  const layout = answerLayout(dots, question('q'), 'a', 8);
-  assert.deepEqual(layout.bands.map(band => band.option), ['b', 'a']);
-  assert.deepEqual(layout.bands.map(band => band.path), [arcBand(0, Math.PI / 2), arcBand(Math.PI / 2, Math.PI)]);
-  assert.ok(layout.dots.find(dot => dot.person.id === '1')!.x > 200);
-  assert.ok(layout.dots.find(dot => dot.person.id === '2')!.x < 200);
-  assert.deepEqual(layout.marker, readerOnArc(8).marker);
+  for (const choice of ['a', 'b'] as const) {
+    for (const score of [2, 5, 8] as const) {
+      const layout = answerLayout(dots, question('q'), choice, score);
+      assert.deepEqual(layout.bands.map(band => band.option), ['a', 'b']);
+      assert.deepEqual(layout.bands.map(band => band.path), [arcBand(0, Math.PI / 2), arcBand(Math.PI / 2, Math.PI)]);
+      assert.ok(layout.dots.find(dot => dot.person.id === '1')!.x < 200);
+      assert.ok(layout.dots.find(dot => dot.person.id === '2')!.x > 200);
+      assert.equal(layout.marker.x < 200, choice === 'a');
+    }
+  }
 });
 
 test('shows Yes on the left and No on the right for voting', () => {

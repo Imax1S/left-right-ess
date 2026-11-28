@@ -1,4 +1,4 @@
-import { scores, sideOf } from '../domain/model.ts';
+import { outerChoices, scores } from '../domain/model.ts';
 import type { Choice, Dot, Question, Score, Side } from '../domain/model.ts';
 
 export interface Point { x: number; y: number }
@@ -226,11 +226,7 @@ export function answerLayout(
 ) {
   const middlePeople = question.options.neutral === undefined
     ? null : dots.filter(dot => dot.answers[question.id] === 'neutral');
-  const side = sideOf(markerScore);
-  const reversed = question.id !== 'vote' &&
-    ((choice === 'a' && side === 'right') || (choice === 'b' && side === 'left'));
-  const options = reversed ? ['b', 'a'] as const : ['a', 'b'] as const;
-  const groups = options.map((option, i) => ({
+  const groups = outerChoices.map((option, i) => ({
     option,
     people: dots.filter(dot => dot.answers[question.id] === option),
     start: i === 0 ? 0 : Math.PI / 2,

@@ -1,4 +1,4 @@
-import { scores, sideLabels, sideOf, sides } from '../domain/model.ts';
+import { outerChoices, scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from './answerAlignment.ts';
 
@@ -75,12 +75,12 @@ export function QuestionControls({ question, onAnswer }: {
   if (question.portrait) return <div className="portrait-question">
     <p id="answer-portrait">{question.portrait}</p>
     <div className="answer-options portrait-options" role="group" aria-label="Choose your answer" aria-describedby="answer-portrait">
-      {(['a', 'b'] as const).map(choice =>
+      {outerChoices.map(choice =>
         <button key={choice} onClick={() => onAnswer(choice)}>{question.options[choice]}</button>)}
     </div>
   </div>;
   return <div className="answer-options" role="group" aria-label="Choose your answer">
-    {(['a', 'b'] as const).map(choice =>
+    {outerChoices.map(choice =>
       <AnswerButton key={choice} choice={choice} label={question.options[choice]} onClick={() => onAnswer(choice)} />)}
     {question.options.neutral && <button className="answer-middle" onClick={() => onAnswer('neutral')}>
       {question.options.neutral}

@@ -119,7 +119,7 @@ export function Methodology({ data }: { data: StoryData }) {
         <div>
           <h2 id="method-answers">From survey answers to answer groups</h2>
           <p>We combine related answers and keep middle responses wherever the survey provides one. The weighted comparison uses everyone with a recorded position and a displayed answer to that question.</p>
-          <p>The dots regroup by answer. Middle answers collect in the open space below the bands. For either outer answer, the reader marker lands in the selected band, toward the group where that answer is most common. Each question starts at the reader’s original mark.</p>
+          <p>The dots regroup by answer. The left and right buttons match the left and right bands on the chart. Middle answers collect in the open space between them. The reader marker moves into the selected answer group. Each question starts at the reader’s original mark.</p>
         </div>
         {agreement && <figure className="method-card method-recode">
           <figcaption>{agreement.prompt}</figcaption>
