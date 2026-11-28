@@ -5,7 +5,7 @@ import type { Choice, Score, StoryData, StoryQuestion } from '../domain/model.ts
 import { ArcChart, ReaderGlyph } from '../visualization/ArcChart.tsx';
 import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, SurveyIntro, YesControl,
   formatShare, integer } from './controls.tsx';
-import { trackStoryProgress } from './analytics.ts';
+import { storyAnalytics } from './analytics.ts';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
 import { OffArcAnswerDetails, offArcQuestions, UnderstandingComparison, UnderstandingResult } from './ActTwo.tsx';
@@ -23,7 +23,7 @@ function Fact({ value, caption }: { value: ReactNode; caption: string }) {
   return <div className="fact"><strong>{value}</strong><span>{caption}</span></div>;
 }
 
-export function Story({ data, showMethod }: { data: StoryData; showMethod: boolean }) {
+export function Story({ data, hidden, privacyLinks }: { data: StoryData; hidden: boolean; privacyLinks: ReactNode }) {
   const hasActTwo = Boolean(data.disillusioned);
   const reduce = useMemo(() => createSessionReducer(
     data.questions.map(question => question.id), data.countries.map(country => country.code), hasActTwo,
@@ -67,18 +67,18 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const shown = (matches ?? data.dots).filter(dot => dot.score === score).length;
 
   useEffect(() => {
-    if (showMethod || !focusOnChange.current) return;
+    if (hidden || !focusOnChange.current) return;
     headingRef.current?.focus({ preventScroll: true });
     if (step !== 'result' || closingCircle) {
       const animateScroll = step === 'engagement' &&
         !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       window.scrollTo({ top: 0, behavior: animateScroll ? 'smooth' : 'instant' });
     }
-  }, [step, index, showMethod, closingCircle]);
+  }, [step, index, hidden, closingCircle]);
 
   useEffect(() => {
-    if (!showMethod) trackStoryProgress(step, index);
-  }, [step, index, showMethod]);
+    storyAnalytics.progress(step, index);
+  }, [step, index]);
 
   function navigate(action: Parameters<typeof dispatch>[0]) {
     focusOnChange.current = true;
@@ -91,20 +91,24 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     navigator.vibrate?.(10);
   }
 
+  const footer = <footer className="story-footer">
+    <a href="#/about">Data &amp; methodology</a>
+    {privacyLinks}
+  </footer>;
   const takeawayHeading = <>A label tells <mark>part</mark> of the story.</>;
   const takeaway = state.step === 'conclusion' && <Takeaway data={data} score={state.score} answers={state.answers}
     openingHeading={closingCircle ? undefined : <h1 id="story-heading" tabIndex={-1} ref={headingRef}
       className="story-heading">{takeawayHeading}</h1>}
     onRestart={() => navigate({ type: 'restart' })} />;
   if (state.step === 'conclusion' && !closingCircle) {
-    return <main hidden={showMethod} className={hasActTwo
+    return <main hidden={hidden} className={hasActTwo
       ? 'story-page conclusion-page is-closing-result' : 'story-page conclusion-page'}>
       <header className="story-header">
         <Wordmark />
         <button className="back-button" onClick={() => navigate({ type: 'back' })}><Arrow back /> Back</button>
       </header>
       {takeaway}
-      <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>
+      {footer}
     </main>;
   }
 
@@ -184,7 +188,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     </>;
   }
 
-  return <main hidden={showMethod} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${hasVotingCardSlot ? ' step-act-two' : ''}${voteQuestion && result ? ' step-vote-result' : ''}${palette}`}>
+  return <main hidden={hidden} className={`story-page step-${step}${comparisonLayout ? ' step-comparison' : ''}${hasVotingCardSlot ? ' step-act-two' : ''}${voteQuestion && result ? ' step-vote-result' : ''}${palette}`}>
     <section className="story-grid" aria-labelledby="story-heading">
       <header className="story-header">
         <Wordmark />
@@ -215,7 +219,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       </div>
       <div className="story-controls">{controls}</div>
     </section>
-    <footer className="story-footer"><a href="#/about">Data &amp; methodology</a></footer>
+    {footer}
   </main>;
 }
 

@@ -45,40 +45,68 @@ export function funnelPayload(metadata: VisitMetadata, event?: Milestone) {
   };
 }
 
-type Umami = {
+export type UmamiTracker = {
   track: (payload: (metadata: VisitMetadata) => ReturnType<typeof funnelPayload>) => Promise<unknown>;
 };
 
-const hostname = 'leftright.center';
-let queue: Promise<Umami | undefined> | undefined;
+export function createVisitTracker(load: () => Promise<UmamiTracker | undefined>) {
+  let active: { queue: Promise<void>; progress: ReturnType<typeof createFunnelTracker> } | undefined;
+  let tracker: Promise<UmamiTracker | undefined> | undefined;
 
-function send(event?: Milestone) {
-  queue = queue?.then(async tracker => {
-    try {
-      await tracker?.track(metadata => funnelPayload(metadata, event));
-    } catch {
+  function send(event?: Milestone) {
+    const consent = active;
+    if (!consent) return;
+    consent.queue = consent.queue.then(async () => {
+      if (active !== consent) return;
+      const umami = await (tracker ??= load());
+      if (active === consent) await umami?.track(metadata => funnelPayload(metadata, event));
+    }).catch(() => {
       // Analytics is optional and should never interrupt the story.
-    }
-    return tracker;
-  });
+    });
+  }
+
+  return {
+    allow() {
+      if (active) return;
+      active = { queue: Promise.resolve(), progress: createFunnelTracker(send) };
+      send();
+    },
+    stop() {
+      active = undefined;
+    },
+    progress(step: Session['step'], index: number) {
+      active?.progress(step, index);
+    },
+  };
 }
 
-export function startAnalytics(websiteId: string | undefined) {
-  if (queue || location.hostname !== hostname || !websiteId ||
-      !/^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(websiteId)) return;
+const hostname = 'leftright.center';
 
-  queue = new Promise(resolve => {
+function umamiWebsiteId() {
+  const websiteId: string | undefined = import.meta.env.VITE_UMAMI_WEBSITE_ID;
+  if (location.hostname === hostname && import.meta.env.VITE_PRIVACY_CONTACT_EMAIL && websiteId &&
+      /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/i.test(websiteId)) return websiteId;
+}
+
+export function analyticsChoiceAvailable() {
+  return import.meta.env.DEV || Boolean(umamiWebsiteId());
+}
+
+function loadUmamiTracker() {
+  const websiteId = umamiWebsiteId();
+  if (!websiteId) return Promise.resolve(undefined);
+
+  return new Promise<UmamiTracker | undefined>(resolve => {
     const script = document.createElement('script');
     script.src = 'https://cloud.umami.is/script.js';
     script.referrerPolicy = 'no-referrer';
     script.dataset.websiteId = websiteId;
     script.dataset.domains = hostname;
     script.dataset.autoTrack = 'false';
-    script.onload = () => resolve((window as Window & { umami?: Umami }).umami);
+    script.onload = () => resolve((window as Window & { umami?: UmamiTracker }).umami);
     script.onerror = () => resolve(undefined);
     document.head.append(script);
   });
-  send();
 }
 
-export const trackStoryProgress = createFunnelTracker(send);
+export const storyAnalytics = createVisitTracker(loadUmamiTracker);

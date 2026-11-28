@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { createFunnelTracker, funnelPayload } from '../src/story/analytics.ts';
+import { createFunnelTracker, createVisitTracker, funnelPayload } from '../src/story/analytics.ts';
+
+import type { UmamiTracker } from '../src/story/analytics.ts';
+
+const metadata = { website: 'example-id', hostname: 'leftright.center', screen: '390x844', language: 'en', referrer: '' };
+const nextTurn = () => new Promise(resolve => setImmediate(resolve));
 
 test('the funnel records each milestone once per page, including after Back', () => {
   const events: string[] = [];
@@ -46,4 +51,48 @@ test('analytics sends only site metadata and the milestone name', () => {
   });
   assert.equal('name' in funnelPayload(incoming), false);
   assert.equal(funnelPayload({ ...incoming, referrer: '/about' }).referrer, '');
+});
+
+test('analytics starts on consent and sends only milestones reached while active', async () => {
+  const sent: Array<string | undefined> = [];
+  let loads = 0;
+  const visit = createVisitTracker(async () => {
+    loads++;
+    return { track: async build => { sent.push(build(metadata).name); } };
+  });
+
+  visit.progress('question', 0);
+  await nextTurn();
+  assert.equal(loads, 0);
+  assert.deepEqual(sent, []);
+
+  visit.allow();
+  visit.allow();
+  visit.progress('missing-prompt', -1);
+  await nextTurn();
+  assert.equal(loads, 1);
+  assert.deepEqual(sent, [undefined, 'act_two_reached']);
+
+  visit.stop();
+  visit.progress('conclusion', 6);
+  await nextTurn();
+  assert.deepEqual(sent, [undefined, 'act_two_reached']);
+});
+
+test('withdrawal cancels queued requests even if a visitor consents again before Umami loads', async () => {
+  const sent: Array<string | undefined> = [];
+  let resolve!: (value: UmamiTracker) => void;
+  const ready = new Promise<UmamiTracker>(done => { resolve = done; });
+  const visit = createVisitTracker(() => ready);
+
+  visit.allow();
+  visit.progress('question', 0);
+  await nextTurn();
+  visit.stop();
+  visit.allow();
+  visit.progress('missing-prompt', -1);
+  resolve({ track: async build => { sent.push(build(metadata).name); } });
+  await nextTurn();
+
+  assert.deepEqual(sent, [undefined, 'act_two_reached']);
 });

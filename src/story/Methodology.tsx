@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Dot, StoryData, StoryQuestion } from '../domain/model.ts';
 import { arcLayout, placementBand, viewBox } from '../visualization/geometry.ts';
@@ -58,7 +59,7 @@ function QuestionMethod({ question }: { question: StoryQuestion }) {
   </details>;
 }
 
-export function Methodology({ data }: { data: StoryData }) {
+export function Methodology({ data, privacyLinks }: { data: StoryData; privacyLinks: ReactNode }) {
   const agreement = data.questions.find(({ options }) => options.a === 'Agree' && options.b === 'Disagree' && options.neutral);
 
   return <main className="story-page method-page">
@@ -166,6 +167,7 @@ export function Methodology({ data }: { data: StoryData }) {
         <a href={data.source.doi}>European Social Survey dataset</a>
         <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">{data.source.license}</a>
         <a href="https://github.com/Imax1S/left-right-ess">Source code</a>
+        {privacyLinks}
       </div>
     </footer>
   </main>;
