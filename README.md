@@ -1,6 +1,6 @@
 # Left. Right.
 
-An interactive story about how much a political label tells you. Place yourself on the arc, answer six questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
+An interactive story about how much a political label tells you. Pick your place on the left–right scale, answer six questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
 
 **[Play the story](https://imax1s.github.io/left-right-ess/)** · [Explore the data and methodology](https://imax1s.github.io/left-right-ess/#/about)
 
@@ -10,21 +10,21 @@ An interactive story about how much a political label tells you. Place yourself 
 
 ![Left. Right. wordmark, Unbounded and Manrope typography, and the ink, paper, red, green, blue, orange and yellow swatches.](docs/readme/arc-identity.webp)
 
-The arc borrows its shape from a parliamentary seating chart. Red circles, muted green squares and blue diamonds carry each respondent’s original political group as the dots move into answer groups. Orange follows the reader and the people who chose the same starting mark. **Unbounded** sets the headlines and large numbers. **Manrope** sets the labels and body copy.
+The chart borrows its semicircular shape from a parliamentary seating plan. Red circles, muted green squares and blue diamonds carry each respondent’s original political group as the dots move into answer groups. Orange follows the reader and the people who chose the same starting mark. **Unbounded** sets the headlines and large numbers. **Manrope** sets the labels and body copy.
 
-## From the survey to the arc
+## From the survey to the chart
 
 | Stage | People | Coverage |
 | --- | ---: | --- |
 | ESS11 extract | 50,116 records | 30 countries in the checked-in extract |
 | Eligible for the comparison | 32,973 respondents | The 22 EU member states present in that extract, with valid age and weight and self-placement from 0 to 10 |
-| Drawn on the arc | 100 dots | Respondents with a displayed answer to each story question, with at least one dot for every selected country |
+| Shown on the chart | 100 dots | Respondents with a displayed answer to each story question, with at least one dot for every selected country |
 
 We group self-placement as left (0–4), centre (5) and right (6–10). Percentages pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). Each question uses all its displayed answers, including middle answers wherever the survey offered one. The final circle also includes valid answers from people without a recorded left–right mark.
 
 The finale shows how often the reader chose the most common answer in their starting group. Open the details to compare each answer across all three groups and see the clearest examples of agreement and disagreement.
 
-The arc is a deterministic weighted sample. After giving each country a place, the sampler allocates the other dots as close as possible to each country’s share of the survey weight. You can highlight a country, age group, gender, education level or religiosity level on the arc. The country filter changes the highlights on those 100 dots. The survey percentages continue to describe the pooled comparison.
+The chart shows a deterministic weighted sample. After giving each country a place, the sampler allocates the other dots as close as possible to each country’s share of the survey weight. You can highlight a country, age group, gender, education level or religiosity level among those 100 dots. The survey percentages continue to describe the pooled comparison.
 
 Adapted from [European Social Survey Round 11, edition 4.2](https://doi.org/10.21338/ess11e04_2), 2023–2024, under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). ESS ERIC and CST are not responsible for this adaptation or interpretation.
 

@@ -156,7 +156,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
 
   return (
     <figure className={figureClass} aria-label={circle
-      ? (offArcCount ? 'The respondents from the arc, yellow dots for those without a mark, and your marker form a circle.'
+      ? (offArcCount ? 'The respondents on the chart, yellow dots for those without a mark, and your marker form a circle.'
         : 'The same respondents and your marker form a circle.')
         + (understandingShare ? ' Across the countries in this story, ' + understandingShare
           + ' of people who answered the question said the description was somewhat to very much like them.' : '')
@@ -165,7 +165,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
-        + (offArcCount ? ' ' + offArcCount + ' yellow dots inside the arc represent the weighted share without a mark.' : '')}>
+        + (offArcCount ? ' ' + offArcCount + ' yellow dots in the open space represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>

@@ -5,6 +5,7 @@ import { matchesHighlights } from '../src/story/highlights.ts';
 import config from '../story.config.ts';
 import { groupMatch, takeawayExamples } from '../src/story/takeaway.ts';
 import { ess11Source } from '../src/ess/source.ts';
+import { essProfile } from '../src/ess/profile.ts';
 import { prepareStory } from '../src/domain/prepareStory.ts';
 
 test('a highlight matches only the selected country or recorded profile value', () => {
@@ -16,6 +17,16 @@ test('a highlight matches only the selected country or recorded profile value', 
   assert.ok(!matchesHighlights(dot, { key: 'age', value: '15-29' }));
   assert.ok(!matchesHighlights(dot, { key: 'religiosity', value: 'high' }));
   assert.ok(!matchesHighlights({ ...dot, country: 'FI' }, { key: 'country', value: 'EE' }));
+});
+
+test('education highlights distinguish bachelor’s from higher degrees', () => {
+  const person = { id: '42', country: 'EE', score: 3, answers: {} } satisfies Dot;
+  const bachelor = { ...person, profile: essProfile(35, null, null, 6) };
+  const masters = { ...person, profile: essProfile(35, null, null, 7) };
+  assert.ok(matchesHighlights(bachelor, { key: 'education', value: 'bachelor' }));
+  assert.ok(!matchesHighlights(masters, { key: 'education', value: 'bachelor' }));
+  assert.ok(matchesHighlights(masters, { key: 'education', value: 'master-or-higher' }));
+  assert.equal(essProfile(35, null, null, 55).education, undefined);
 });
 
 test('published dots carry the categorical ESS profile and the takeaway uses genuine shared answers', async () => {

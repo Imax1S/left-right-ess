@@ -121,7 +121,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     heading = 'Get to know your sector';
     cards = <>
       <Fact value={shown} caption={matches ? 'Matches in your sector' : 'Shown at your mark'} />
-      <Fact value={matches?.length ?? data.dots.length} caption={matches ? 'Matches on the arc' : 'People shown on the arc'} />
+      <Fact value={matches?.length ?? data.dots.length} caption={matches ? 'Matches shown' : 'People shown'} />
     </>;
     controls = <ExploreControls countries={data.countries} dots={data.dots} selection={state.highlight}
       onSelect={selection => dispatch({ type: 'filter', selection })}
@@ -149,7 +149,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
       continueLabel={final ? 'See the takeaway' : voteQuestion ? 'Continue' : 'Next question'} onContinue={next} />;
   } else if (state.step === 'missing-prompt') {
-    heading = 'Is anyone missing from the arc?';
+    heading = 'Are we missing anyone?';
     controls = <YesControl onYes={next} />;
   } else if (state.step === 'engagement' && offArc) {
     heading = 'They were outside the scale.';

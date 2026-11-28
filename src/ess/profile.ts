@@ -11,7 +11,9 @@ export function essProfile(
     profile.religiosity = religiosity <= 3 ? 'low' : religiosity <= 6 ? 'middle' : 'high';
   }
   if (education !== null && Number.isInteger(education) && education >= 1 && education <= 7) {
-    profile.education = education <= 2 ? 'below-upper' : education <= 5 ? 'upper-vocational' : 'tertiary';
+    profile.education = education <= 2 ? 'below-upper'
+      : education <= 5 ? 'upper-vocational'
+      : education === 6 ? 'bachelor' : 'master-or-higher';
   }
   return profile;
 }

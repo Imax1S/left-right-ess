@@ -71,20 +71,21 @@ export function Methodology({ data }: { data: StoryData }) {
       <div>
         <p className="method-source">European Social Survey · {data.source.years}</p>
         <h1 className="story-heading" tabIndex={-1} id="method-heading">Data &amp; <mark>methodology</mark></h1>
-        <p className="method-lead">Follow the survey from interview records to the dots on the arc and the numbers behind each answer.</p>
+        <p className="method-lead">Follow the survey from interview records to the dots on the chart and the numbers behind each answer.</p>
       </div>
       <SampleArc dots={data.dots} />
     </section>
 
-    <ol className="method-flow" aria-label="From the survey to the arc">
+    <ol className="method-flow" aria-label="From the survey to the chart">
       <li><strong>{integer.format(data.source.records)}</strong><span>Survey records</span><small>{data.source.countries} countries in the extract</small></li>
       <li><strong>{integer.format(data.eligibleCount)}</strong><span>Eligible respondents</span><small>{data.countries.length} countries in the comparison</small></li>
-      <li><strong>{integer.format(data.dots.length)}</strong><span>Dots on the arc</span><small>One respondent per dot</small></li>
+      <li><strong>{integer.format(data.dots.length)}</strong><span>Dots on the chart</span><small>One respondent per dot</small></li>
     </ol>
 
     <section className="method-split" aria-label="From respondents to dots">
       <article className="method-card">
-        <h2>Who makes it onto the arc?</h2>
+        <h2>Who’s shown on the chart?</h2>
+        <p>The chart is shaped like a parliamentary seating plan. Each dot represents a survey respondent.</p>
         <p>The ESS asks people to place themselves on a scale from 0 (left) to 10 (right). We group 0–4 on the left, 5 in the centre and 6–10 on the right.</p>
         <ol className="method-scale" aria-label="Left–right scale with an included midpoint">
           {scores.map(score => <li key={score} className={sideOf(score)}>{score}</li>)}
@@ -104,7 +105,7 @@ export function Methodology({ data }: { data: StoryData }) {
           <dl className="method-profile">
             <div><dt>Age</dt><dd>15–29, 30–44, 45–59 and 60+</dd></div>
             <div><dt>Gender</dt><dd>Categories recorded by ESS</dd></div>
-            <div><dt>Education</dt><dd>ES-ISCED levels 1–2, 3–5 and 6–7</dd></div>
+            <div><dt>Education</dt><dd>Highest completed level. Lower secondary or less (ES-ISCED codes 1–2), high school or vocational (3–5), bachelor’s level (6), and master’s level or higher (7). The groups include equivalent qualifications.</dd></div>
             <div><dt>Religiosity</dt><dd>Self-rating of 0–3, 4–6 or 7–10</dd></div>
             <div><dt>Country</dt><dd>Country of interview</dd></div>
           </dl>
@@ -118,7 +119,7 @@ export function Methodology({ data }: { data: StoryData }) {
         <div>
           <h2 id="method-answers">From survey answers to answer groups</h2>
           <p>We combine related answers and keep middle responses wherever the survey provides one. The weighted comparison uses everyone with a recorded position and a displayed answer to that question.</p>
-          <p>The dots regroup by answer. Middle answers collect inside the arc. For either outer answer, the reader marker lands in the selected band, toward the group where that answer is most common. Each question starts at the reader’s original mark.</p>
+          <p>The dots regroup by answer. Middle answers collect in the open space below the bands. For either outer answer, the reader marker lands in the selected band, toward the group where that answer is most common. Each question starts at the reader’s original mark.</p>
         </div>
         {agreement && <figure className="method-card method-recode">
           <figcaption>{agreement.prompt}</figcaption>
