@@ -7,10 +7,9 @@ export const profileFacets = [
     { value: 'women', label: 'Women' }, { value: 'men', label: 'Men' },
   ] },
   { key: 'education', label: 'Education', options: [
-    { value: 'below-upper', label: 'Lower secondary or less' },
-    { value: 'upper-vocational', label: 'High school or vocational' },
-    { value: 'bachelor', label: 'Bachelor’s level' },
-    { value: 'master-or-higher', label: 'Master’s level or higher' },
+    { value: 'school-vocational', label: 'School / vocational' },
+    { value: 'bachelor', label: 'Bachelor’s' },
+    { value: 'master-or-higher', label: 'Master’s or higher' },
   ] },
   { key: 'religiosity', label: 'Religiosity', options: [
     { value: 'low', label: 'Low (0–3)' }, { value: 'middle', label: 'Middle (4–6)' }, { value: 'high', label: 'High (7–10)' },

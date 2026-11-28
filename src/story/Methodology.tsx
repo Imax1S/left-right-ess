@@ -105,7 +105,7 @@ export function Methodology({ data }: { data: StoryData }) {
           <dl className="method-profile">
             <div><dt>Age</dt><dd>15–29, 30–44, 45–59 and 60+</dd></div>
             <div><dt>Gender</dt><dd>Categories recorded by ESS</dd></div>
-            <div><dt>Education</dt><dd>Highest completed level. Lower secondary or less (ES-ISCED codes 1–2), high school or vocational (3–5), bachelor’s level (6), and master’s level or higher (7). The groups include equivalent qualifications.</dd></div>
+            <div><dt>Education</dt><dd>Highest completed level. School / vocational groups all levels below a bachelor’s degree or equivalent (ES-ISCED codes 1–5). Bachelor’s groups code 6, and master’s or higher groups code 7. The groups include equivalent qualifications.</dd></div>
             <div><dt>Religiosity</dt><dd>Self-rating of 0–3, 4–6 or 7–10</dd></div>
             <div><dt>Country</dt><dd>Country of interview</dd></div>
           </dl>

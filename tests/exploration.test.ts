@@ -19,8 +19,12 @@ test('a highlight matches only the selected country or recorded profile value', 
   assert.ok(!matchesHighlights({ ...dot, country: 'FI' }, { key: 'country', value: 'EE' }));
 });
 
-test('education highlights distinguish bachelor’s from higher degrees', () => {
+test('education highlights use three groups based on the highest completed level', () => {
   const person = { id: '42', country: 'EE', score: 3, answers: {} } satisfies Dot;
+  for (const code of [1, 2, 3, 4, 5]) {
+    const school = { ...person, profile: essProfile(35, null, null, code) };
+    assert.ok(matchesHighlights(school, { key: 'education', value: 'school-vocational' }));
+  }
   const bachelor = { ...person, profile: essProfile(35, null, null, 6) };
   const masters = { ...person, profile: essProfile(35, null, null, 7) };
   assert.ok(matchesHighlights(bachelor, { key: 'education', value: 'bachelor' }));
