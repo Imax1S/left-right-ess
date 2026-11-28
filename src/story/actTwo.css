@@ -6,6 +6,15 @@
 .step-act-two.step-listening-bridge .story-heading { max-width: 18ch; }
 .voting-cards { opacity: 0; transition: opacity 240ms ease; }
 .voting-cards.is-visible { opacity: 1; }
+@media (width < 800px) {
+  .step-act-two .story-visual {
+    transition: grid-template-rows 280ms ease, row-gap 280ms ease;
+  }
+  .step-act-two .story-visual:has(> .story-facts > .voting-cards:not(.is-visible)) {
+    --story-facts-height: 0px;
+    --story-visual-gap: 0px;
+  }
+}
 .answer-options.single-answer { grid-template-columns: minmax(0, 1fr); }
 html { transition: filter 660ms ease, background-color 660ms ease; }
 html:has(.story-page.is-monochrome:not([hidden])) {
