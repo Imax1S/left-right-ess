@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { createSessionReducer, initialSession } from '../src/story/session.ts';
+import config from '../story.config.ts';
 
 const reduce = createSessionReducer(['inequality', 'freedom'], ['EE', 'FR']);
 
@@ -63,13 +64,13 @@ test('each selection replaces the previous filter, including country', () => {
 });
 
 test('voting leads directly into the off-arc interlude and the final question', () => {
-  const act = createSessionReducer(['inequality', 'migration', 'adoption', 'climate', 'vote', 'understanding'], [], true);
-  const climate = { step: 'result', score: 8, index: 3, option: 'b', answers: { 0: 'neutral', 1: 'a', 3: 'b' } } as const;
-  const voting = act(climate, { type: 'next' });
-  assert.deepEqual(voting, { step: 'question', score: 8, index: 4, answers: climate.answers });
-  assert.deepEqual(act(voting, { type: 'back' }), { step: 'question', score: 8, index: 3, answers: climate.answers });
+  const act = createSessionReducer(config.questions, [], true);
+  const equalPay = { step: 'result', score: 8, index: 4, option: 'b', answers: { 0: 'neutral', 1: 'a', 4: 'b' } } as const;
+  const voting = act(equalPay, { type: 'next' });
+  assert.deepEqual(voting, { step: 'question', score: 8, index: 5, answers: equalPay.answers });
+  assert.deepEqual(act(voting, { type: 'back' }), { step: 'question', score: 8, index: 4, answers: equalPay.answers });
   const vote = act(voting, { type: 'answer', option: 'b' });
-  const voteAnswers = { ...climate.answers, 4: 'b' };
+  const voteAnswers = { ...equalPay.answers, 5: 'b' };
   let previous: ReturnType<typeof act> = vote;
   for (const step of ['missing-prompt', 'engagement', 'trust', 'influence', 'listening-bridge']) {
     const next = act(previous, { type: 'next' });
@@ -78,10 +79,10 @@ test('voting leads directly into the off-arc interlude and the final question', 
     previous = next;
   }
   const understanding = act(previous, { type: 'next' });
-  assert.deepEqual(understanding, { step: 'question', score: 8, index: 5, answers: voteAnswers });
+  assert.deepEqual(understanding, { step: 'question', score: 8, index: 6, answers: voteAnswers });
   assert.deepEqual(act(understanding, { type: 'back' }), previous);
   const result = act(understanding, { type: 'answer', option: 'a' });
   assert.deepEqual(act(result, { type: 'next' }), {
-    step: 'conclusion', score: 8, answers: { ...voteAnswers, 5: 'a' },
+    step: 'conclusion', score: 8, answers: { ...voteAnswers, 6: 'a' },
   });
 });

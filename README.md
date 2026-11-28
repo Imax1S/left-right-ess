@@ -1,6 +1,6 @@
 # Left. Right.
 
-An interactive story about how much a political label tells you. Pick your place on the left–right scale, answer six questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
+An interactive story about how much a political label tells you. Pick your place on the left–right scale, answer seven questions from the European Social Survey, and compare your answers with those of people on the left, at the midpoint and on the right.
 
 **[Play the story](https://imax1s.github.io/left-right-ess/)** · [Explore the data and methodology](https://imax1s.github.io/left-right-ess/#/about)
 

@@ -53,20 +53,19 @@ test('the takeaway shows both shared agreement and the widest gap', async () => 
   const story = await prepareStory(await ess11Source(), config);
   const { agreement, widest } = takeawayExamples(story.questions);
   assert.equal(agreement?.question.id, 'understanding');
-  assert.equal(widest?.question.id, 'migration');
+  assert.equal(widest?.question.id, 'adoption');
   assert.equal(widest?.choice, 'a');
-  assert.equal(widest?.question.options.neutral, undefined);
+  assert.equal(widest?.question.options.neutral, 'Neither agree nor disagree');
   assert.deepEqual(takeawayExamples([]), { agreement: null, widest: null });
   assert.deepEqual(story.questions.map(question => question.association?.toFixed(2)), [
-    '0.12', '0.24', '0.17', '0.14', '0.14', '0.06',
+    '0.12', '0.17', '0.15', '0.15', '0.09', '0.14', '0.06',
   ]);
 });
 
 test('a personal result counts the most common answer in the original group for each answered question', async () => {
   const story = await prepareStory(await ess11Source(), config);
-  const answers = { 0: 'a', 1: 'a', 2: 'a', 3: 'neutral', 4: 'b', 5: 'a' } as const;
-  assert.deepEqual(groupMatch(story.questions, 5, answers), { matches: 5, compared: 6 });
-  assert.deepEqual(groupMatch(story.questions, 4, answers), { matches: 4, compared: 6 });
+  const answers = { 0: 'a', 1: 'a', 2: 'b', 3: 'neutral', 4: 'a', 5: 'b', 6: 'a' } as const;
+  assert.deepEqual(groupMatch(story.questions, 5, answers), { matches: 5, compared: 7 });
   assert.deepEqual(groupMatch(story.questions, 5, { 0: 'neutral' }), { matches: 0, compared: 1 });
   assert.deepEqual(groupMatch(story.questions, 5, {}), { matches: 0, compared: 0 });
 });
@@ -75,12 +74,12 @@ test('benchmarks a complete match and shared answer patterns using the full weig
   const story = await prepareStory(await ess11Source(), config);
   const profiles = story.responsePatterns;
   assert.ok(profiles);
-  assert.equal(profiles.count, 29099);
-  assert.equal(profiles.fullMatchPercent.toFixed(1), '13.3');
+  assert.equal(profiles.count, 28864);
+  assert.equal(profiles.fullMatchPercent.toFixed(1), '9.1');
   assert.deepEqual(
     (['left', 'centre', 'right'] as const).map(side => profiles.fullMatchPercentByGroup[side]?.toFixed(1)),
-    ['27.4', '7.4', '3.6'],
+    ['13.0', '7.6', '6.3'],
   );
-  assert.equal(profiles.sharedAcrossGroupsPercent?.toFixed(1), '99.4');
+  assert.equal(profiles.sharedAcrossGroupsPercent?.toFixed(1), '96.6');
   assert.notEqual(profiles.count, story.dots.length);
 });
