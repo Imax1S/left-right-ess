@@ -145,6 +145,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .fact span { font-size: clamp(10px, 2.35vw, 13px); font-weight: 850; line-height: 1.15; letter-spacing: 0.08em; text-transform: uppercase; }
 
 .arc-figure { width: 100%; min-width: 0; }
+.arc-figure.is-result { --answer-duration: 620ms; }
 .chart-surface { position: relative; overflow: clip; }
 .arc-svg { display: block; width: 100%; height: auto; overflow: visible; }
 .score-guide { fill: none; stroke: var(--cream); stroke-width: 1.4; pointer-events: none; }
@@ -171,11 +172,10 @@ a { color: inherit; text-underline-offset: 0.2em; }
 }
 .chart-layer { opacity: 1; }
 .chart-layer.is-hidden { opacity: 0; }
-.is-result .placement-canvas { transition: opacity 660ms ease-in 480ms; }
-.answer-canvas:not(.is-hidden) { transition: opacity 350ms ease-out 750ms; }
+.is-result :is(.placement-canvas, .answer-canvas) { transition: opacity var(--answer-duration) ease; }
 .respondent { fill: currentColor; transition: opacity 230ms ease, transform 620ms cubic-bezier(0.5, 0.08, 0.26, 1); }
 .respondent[data-same-score] { fill: var(--reader-orange); stroke: var(--ink); stroke-width: 0.8; }
-.is-result .respondent { transition-duration: 200ms, 880ms; transition-delay: 0ms, var(--delay); }
+.is-result .respondent { transition-duration: 200ms, var(--answer-duration); }
 .placement-band, .placement-outline, .answer-band, .arc-closure path {
   stroke: color-mix(in srgb, var(--ink) 56%, var(--cream));
   stroke-width: 1.4;
@@ -188,6 +188,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   stroke-width: 2.4;
 }
 .reader-marker { fill: var(--reader-orange); stroke: var(--ink); stroke-width: 2.8; transition: transform 460ms cubic-bezier(0.33, 0, 0.22, 1); }
+.is-result .reader-marker { transition-duration: var(--answer-duration); }
 .is-interactive .reader-marker { transition: none; }
 .arc-tap-area { fill: transparent; cursor: pointer; }
 .arc-drag-target { position: absolute; cursor: grab; touch-action: none; }
@@ -248,7 +249,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   grid-template-rows: auto auto;
   text-align: center;
   gap: 4px;
-  animation: cluster-captions-in 240ms ease-out 1s both;
+  animation: cluster-captions-in var(--answer-duration) ease both;
 }
 @keyframes cluster-captions-in { from { opacity: 0; } to { opacity: 1; } }
 .cluster-caption div {
@@ -408,7 +409,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   border: 2px solid var(--ink);
   border-radius: clamp(14px, 3.5vw, 22px);
   background: var(--cream);
-  animation: reveal 300ms 550ms both;
+  animation: reveal 300ms both;
 }
 .result-comparison h2 { font-size: clamp(14px, 3.2vw, 17px); font-weight: 850; }
 .result-rows { display: grid; gap: 11px; margin-top: 13px; }
@@ -422,7 +423,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   height: 100%;
   border-radius: inherit;
   background: currentColor;
-  animation: bar-in 340ms 680ms both;
+  animation: bar-in 340ms both;
 }
 .result-note {
   margin-top: 13px;

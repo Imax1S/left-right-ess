@@ -218,7 +218,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             const style: MotionStyle = {
               transform: moveTo(point),
               opacity,
-              '--delay': circle ? (index % 8) * 9 + 'ms' : groups ? (index % 15) * 20 + 'ms' : '0ms',
+              '--delay': circle ? (index % 8) * 9 + 'ms' : undefined,
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
