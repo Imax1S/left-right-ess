@@ -27,6 +27,7 @@ export interface Question {
   id: string;
   topic: string;
   prompt: string;
+  portrait?: string;
   options: Readonly<Record<'a' | 'b', string> & { neutral?: string }>;
   grouping: string;
 }
@@ -80,6 +81,7 @@ export interface DisillusionedSummary {
   unplacedCount: number;
   unplacedSharePercent: number;
   eligibleTotalCount: number;
+  understandingPercent: number | null;
   groups: Record<Side | 'unplaced', GroupEngagement>;
 }
 

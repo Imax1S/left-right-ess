@@ -126,8 +126,11 @@ export async function ess11Source(
           countries: codes.length,
         },
         countries,
-        questions: questions.map(({ id, short, title, labels, note, type }) => ({
-          id, topic: short, prompt: title, options: { a: labels[0], neutral: middleLabels[type], b: labels[1] }, grouping: note,
+        questions: questions.map(question => ({
+          id: question.id, topic: question.short, prompt: question.title,
+          ...('portrait' in question && { portrait: question.portrait }),
+          options: { a: question.labels[0], neutral: middleLabels[question.type], b: question.labels[1] },
+          grouping: question.note,
         })),
         people,
         unplaced,

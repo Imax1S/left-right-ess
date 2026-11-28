@@ -97,7 +97,7 @@ export function Methodology({ data }: { data: StoryData }) {
       </article>
       <article className="method-card">
         <h2>One dot, one respondent</h2>
-        <p>Each selected country gets at least one dot. We allocate the remaining dots as close as possible to each country’s share of the survey weight. Within each country, we use those weights to select a sample that stays the same across visits.</p>
+        <p>Each selected country gets at least one dot. For the visual sample, we use people who gave one of the displayed answers on every story question. We allocate the remaining dots as close as possible to each country’s share of the eligible survey weight and keep the sample stable across visits.</p>
         <p className="method-orange-note">Orange dots share your starting position and keep their colour when they move into answer groups.</p>
         <details className="method-disclosure">
           <summary>How the filters are grouped</summary>
@@ -117,7 +117,7 @@ export function Methodology({ data }: { data: StoryData }) {
       <div className="method-split method-transform">
         <div>
           <h2 id="method-answers">From survey answers to answer groups</h2>
-          <p>We combine related answers and keep middle responses wherever the survey provides one. We mark missing responses and answers outside the groups separately from the displayed choices.</p>
+          <p>We combine related answers and keep middle responses wherever the survey provides one. The weighted comparison uses everyone with a recorded position and a displayed answer to that question.</p>
           <p>The dots regroup by answer. Middle answers collect inside the arc. For either outer answer, the reader marker lands in the selected band, toward the group where that answer is most common. Each question starts at the reader’s original mark.</p>
         </div>
         {agreement && <figure className="method-card method-recode">
@@ -147,7 +147,8 @@ export function Methodology({ data }: { data: StoryData }) {
       {data.disillusioned && <details className="method-disclosure">
         <summary>Who the yellow dots represent</summary>
         <p>{integer.format(data.disillusioned.unplacedCount)} of {integer.format(data.disillusioned.eligibleTotalCount)} eligible respondents had no recorded mark from 0 to 10. Low trust in parliament is 0–4 on its 0–10 scale. The little-or-no-say share combines the two lowest responses about political influence.</p>
-        <p>The yellow dots represent the weighted share without a mark. Their clusters illustrate the weighted answers to each question. They join the arc’s sample in the closing circle. Its headline percentage uses valid answers from people without a mark. “More like me” combines the top three of the six original responses.</p>
+        <p>The yellow dots take the place of a rounded share of the original dots to illustrate the weighted proportion without a left–right mark. Their clusters illustrate weighted answers from this group.</p>
+        <p>The closing circle uses valid answers to the understanding question from all {data.countries.length} countries in the story, including people without a left–right mark. “Somewhat to very much like me” combines the first three of the six original response options.</p>
       </details>}
       <div className="method-question-grid">
         {data.questions.map(question => <QuestionMethod key={question.id} question={question} />)}

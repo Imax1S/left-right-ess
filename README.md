@@ -18,9 +18,9 @@ The arc borrows its shape from a parliamentary seating chart. Red circles, muted
 | --- | ---: | --- |
 | ESS11 extract | 50,116 records | 30 countries in the checked-in extract |
 | Eligible for the comparison | 32,973 respondents | The 22 EU member states present in that extract, with valid age and weight and self-placement from 0 to 10 |
-| Drawn on the arc | 100 dots | One respondent per dot, with at least one dot for every selected country |
+| Drawn on the arc | 100 dots | Respondents with a displayed answer to each story question, with at least one dot for every selected country |
 
-We group self-placement as left (0–4), centre (5) and right (6–10). Percentages use all displayed answer groups, including middle answers wherever the survey offered one. The arc reports missing and ungrouped responses separately. Estimates pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). The response counts are unweighted.
+We group self-placement as left (0–4), centre (5) and right (6–10). Percentages pool the 22 countries using the ESS analysis weight (`pspwght × pweight`). Each question uses all its displayed answers, including middle answers wherever the survey offered one. The final circle also includes valid answers from people without a recorded left–right mark.
 
 The finale shows how often the reader chose the most common answer in their starting group. Open the details to compare each answer across all three groups and see the clearest examples of agreement and disagreement.
 

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { prepareStory } from '../src/domain/prepareStory.ts';
+import { questionChoices } from '../src/domain/model.ts';
 import { ess11Source } from '../src/ess/source.ts';
 import config from '../story.config.ts';
 
@@ -70,8 +71,11 @@ test('the second act keeps unplaced people out of the original arc sample', asyn
   assert.equal(engagement.groups.unplaced.votedPercent?.toFixed(1), '52.8');
   assert.equal(engagement.groups.unplaced.lowTrustPercent?.toFixed(1), '59.8');
   assert.equal(engagement.groups.unplaced.understandingPercent?.toFixed(1), '84.5');
+  assert.equal(engagement.understandingPercent?.toFixed(1), '88.8');
   assert.equal(engagement.groups.left.understandingPercent?.toFixed(1), '91.1');
   assert.ok(engagement.groups.unplaced.noSayPercent! > engagement.groups.centre.noSayPercent!);
   assert.ok(engagement.groups.centre.votedPercent! < engagement.groups.right.votedPercent!);
   assert.equal(data.dots.length, 100);
+  assert.ok(data.dots.every(dot => data.questions.every(question =>
+    questionChoices(question).some(choice => choice === dot.answers[question.id]))));
 });

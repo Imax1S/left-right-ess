@@ -7,9 +7,9 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
   formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { OffArcAnswerDetails, offArcQuestions,
-  UnderstandingResult, UnplacedShare } from './ActTwo.tsx';
+import { OffArcAnswerDetails, offArcQuestions, UnderstandingResult } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
+import { ShareTakeaway } from './ShareTakeaway.tsx';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
 import { createSessionReducer, initialSession, isActTwoStep, isOffArcStep } from './session.ts';
 import type { Answers } from './session.ts';
@@ -49,15 +49,15 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
   const palette = isOffArcStep(step) ? ' is-monochrome'
     : closingCircle ? ' is-closing-result' : closingQuestion ? ' is-closing-question' : '';
   const outside = data.disillusioned;
-  const understandingShare = outside?.groups.unplaced.understandingPercent ?? null;
+  const understandingShare = outside?.understandingPercent ?? null;
   const understandingCircle = closingCircle ? {
     share: understandingShare === null ? null : formatShare(understandingShare),
+    countries: data.countries.length,
   } : undefined;
   const offArc = outside && (isOffArcStep(step) || closingQuestion) ? {
-    share: outside.unplacedSharePercent,
+    count: Math.round(data.dots.length * outside.unplacedSharePercent / 100),
     answerShare: offArcQuestion ? outside.groups.unplaced[offArcQuestion.field]
       : closingCircle ? outside.groups.unplaced.understandingPercent : undefined,
-    labels: offArcQuestion?.shortAnswers,
   } : undefined;
   const highlight = state.step === 'among' ? state.highlight : null;
   const matches = highlight
@@ -141,20 +141,23 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     const answer = result.question.options[result.choice];
     heading = voteQuestion
       ? result.choice === 'a'
-        ? 'You voted. Some people didn’t. And some people didn’t even answer the question we started with.'
-        : 'You answered no. Some people didn’t give an answer to our first question at all.'
+        ? 'You voted in the last election.'
+        : 'You didn’t vote in the last election.'
       : answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
     controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
       continueLabel={final ? 'See the takeaway' : voteQuestion ? 'Continue' : 'Next question'} onContinue={next} />;
   } else if (state.step === 'missing-prompt') {
-    heading = 'Could we be missing anyone?';
+    heading = 'Is anyone missing from the arc?';
     controls = <YesControl onYes={next} />;
-  } else if (state.step === 'engagement' && data.disillusioned) {
+  } else if (state.step === 'engagement' && offArc) {
     heading = 'They were outside the scale.';
     controls = <div className="act-two-panel">
-      <UnplacedShare data={data.disillusioned} />
+      <p className="off-arc-stat">
+        <strong>{offArc.count}</strong>{' '}
+        <span>of {data.dots.length} dots represent people who gave no left–right answer.</span>
+      </p>
       <p>We know how they answered other questions. Let’s start with trust in parliament.</p>
       <Continue onClick={next}>Look at trust</Continue>
     </div>;
@@ -162,9 +165,9 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     heading = offArcQuestion.prompt;
     controls = <OffArcAnswerDetails question={offArcQuestion} data={data.disillusioned} onContinue={next} />;
   } else if (step === 'listening-bridge') {
-    heading = 'Can we listen across the political divide?';
+    heading = 'What do we share?';
     controls = <div className="act-two-panel">
-      <p>Left, right, or no mark. There’s one last question we can ask everyone.</p>
+      <p>We’ve seen where people place themselves and how much say they feel they have. One last question asks what matters to them when they disagree.</p>
       <Continue onClick={next}>One last question</Continue>
     </div>;
   }
@@ -184,7 +187,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
           {(step === 'among' || question || actTwoScreen) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
             <Arrow back /> Back
           </button>}
-          {step !== 'conclusion' && <span>{actTwoScreen ? 'Act 2' : index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>}
+          {!actTwoScreen && step !== 'conclusion' && <span>{index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>}
         </div>
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
@@ -227,20 +230,18 @@ function Takeaway({ data, score, answers, openingHeading, onRestart }: {
   const { agreement, widest } = takeawayExamples(data.questions);
   const { matches, compared } = groupMatch(data.questions, score, answers);
   const startingSide = sideOf(score);
-  const group = sideLabels[startingSide];
+  const politicalGroup = { left: 'Left (0–4)', centre: 'Centre (5)', right: 'Right (6–10)' }[startingSide];
+  const groupPhrase = startingSide === 'centre' ? 'in the centre' : 'on the ' + startingSide;
   const patterns = data.responsePatterns;
   const groupFullMatch = patterns?.fullMatchPercentByGroup?.[startingSide] ?? null;
-  const understanding = data.questions.find(question => question.id === 'understanding');
-  const sharedValue = understanding && sides.every(side => (understanding.stats[side].a.percent ?? 0) > 50);
-  const offArcSharedValue = (data.disillusioned?.groups.unplaced.understandingPercent ?? 0) > 50;
   const summary = <div className="conclusion-summary">
     <div className="conclusion-mark">
       <svg viewBox="-20 -20 40 40" aria-hidden="true"><g className="reader-marker"><ReaderGlyph score={score} /></g></svg>
-      <div><span>Your starting group</span><b>{group}{score !== 5 && ' · Mark ' + score}</b></div>
+      <div><span>Your political group</span><b>{politicalGroup}</b></div>
     </div>
     {compared > 0 ? <>
       <p className="conclusion-score"><strong>{matches}</strong> <span>of {compared}</span></p>
-      <p>Answers that matched the most common choice in your starting group.</p>
+      <p>of your answers matched the most common choice among people {groupPhrase}.</p>
       <div className="conclusion-dots" aria-hidden="true">
         {Array.from({ length: compared }, (_, i) => <i className={i < matches ? 'is-match' : ''} key={i} />)}
       </div>
@@ -252,17 +253,25 @@ function Takeaway({ data, score, answers, openingHeading, onRestart }: {
       {summary}
     </section> : summary}
     {patterns && <section className="conclusion-context" aria-labelledby="conclusion-context-heading">
-      <h2 id="conclusion-context-heading">How others answered</h2>
+      <div className="conclusion-context-header">
+        <h2 id="conclusion-context-heading">How others answered</h2>
+        <ShareTakeaway result={matches + ' of ' + compared} group={politicalGroup} stats={[
+          ...(groupFullMatch === null ? [] : [{ title: 'All the group’s top answers', value: formatShare(groupFullMatch) }]),
+          ...(patterns.sharedAcrossGroupsPercent === null ? [] : [{
+            title: 'Exact matches across groups', value: formatShare(patterns.sharedAcrossGroupsPercent),
+          }]),
+        ]} />
+      </div>
       <div className="conclusion-cards">
         {groupFullMatch !== null && <article className="conclusion-card conclusion-stat">
-          <h3>Matching on every question</h3>
+          <h3>All the group’s top answers</h3>
           <strong>{formatShare(groupFullMatch)}</strong>
-          <p>of respondents in the {startingSide} group chose their group’s most common answer on every question.</p>
+          <p>of people {groupPhrase} picked their group’s most common answer on all {data.questions.length} questions.</p>
         </article>}
         {patterns.sharedAcrossGroupsPercent !== null && <article className="conclusion-card conclusion-stat">
-          <h3>Same answers across groups</h3>
+          <h3>An exact match across groups</h3>
           <strong>{formatShare(patterns.sharedAcrossGroupsPercent)}</strong>
-          <p>gave a set of answers that appeared in all three groups.</p>
+          <p>of respondents answered every question the same way as someone in each of the other two groups.</p>
         </article>}
       </div>
       <p className="conclusion-context-note">Weighted results based on {integer.format(patterns.count)} ESS respondents who chose a displayed answer on every question.</p>
@@ -299,12 +308,6 @@ function Takeaway({ data, score, answers, openingHeading, onRestart }: {
       </section>}
     </details>
     <div className="conclusion-close">
-      <p>{sharedValue
-        ? (offArcSharedValue
-          ? 'Even among people who gave no political label, most saw themselves as someone who tries to understand people who are different. '
-          : 'Across the scale, most saw themselves as someone who tries to understand people who are different. ')
-          + 'A label gives you a rough clue about where someone stands. Ask what they think and listen to their answer.'
-        : 'Across these questions, a political label gave a rough clue about what someone might say. Ask them about the issue to learn where they stand.'}</p>
       <Continue onClick={onRestart}>Start over</Continue>
     </div>
   </>;

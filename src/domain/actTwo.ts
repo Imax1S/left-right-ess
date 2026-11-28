@@ -40,7 +40,10 @@ export function summarizeEngagement(people: readonly Respondent[], unplaced: Eng
   for (const person of people) {
     tallyEngagement(totals[sideOf(person.score)], person.weight, person.engagement ?? {});
   }
-  const total = Object.values(totals).reduce((sum, group) => sum + group.weight, 0);
+  const groups = Object.values(totals);
+  const total = groups.reduce((sum, group) => sum + group.weight, 0);
+  const understandingWeight = groups.reduce((sum, group) => sum + group.understandingWeight, 0);
+  const understandingYesWeight = groups.reduce((sum, group) => sum + group.understandingYesWeight, 0);
   const shares = (group: EngagementTallies) => ({
     votedPercent: percent(group.votedYesWeight, group.votedWeight),
     noSayPercent: percent(group.noSayWeight, group.sayWeight),
@@ -51,6 +54,7 @@ export function summarizeEngagement(people: readonly Respondent[], unplaced: Eng
     unplacedCount: unplaced.count,
     unplacedSharePercent: percent(unplaced.weight, total) ?? 0,
     eligibleTotalCount: people.length + unplaced.count,
+    understandingPercent: percent(understandingYesWeight, understandingWeight),
     groups: {
       left: shares(totals.left), centre: shares(totals.centre), right: shares(totals.right), unplaced: shares(unplaced),
     },

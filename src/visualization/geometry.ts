@@ -15,7 +15,7 @@ export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
 
 export const offArcCentre: Point = { x: origin.x, y: 163 };
-export const offArcAnswerColumns = [168, 232] as const;
+const offArcAnswerColumns = [168, 232] as const;
 
 function dotCluster(count: number, x: number, width: number) {
   if (!count) return [];
@@ -208,7 +208,8 @@ export function answerLayout(
   const middlePeople = question.options.neutral === undefined
     ? null : dots.filter(dot => dot.answers[question.id] === 'neutral');
   const side = sideOf(markerScore);
-  const reversed = (choice === 'a' && side === 'right') || (choice === 'b' && side === 'left');
+  const reversed = question.id !== 'vote' &&
+    ((choice === 'a' && side === 'right') || (choice === 'b' && side === 'left'));
   const options = reversed ? ['b', 'a'] as const : ['a', 'b'] as const;
   const groups = options.map((option, i) => ({
     option,

@@ -108,6 +108,14 @@ test('puts the selected answer on the side of the reader’s destination', () =>
   assert.deepEqual(layout.marker, readerOnArc(8).marker);
 });
 
+test('shows Yes on the left and No on the right for voting', () => {
+  for (const [choice, score] of [['a', 8], ['b', 2]] as const) {
+    const result = answerLayout([], question('vote'), choice, score);
+    assert.deepEqual(result.bands.map(band => band.option), ['a', 'b']);
+    assert.equal(result.marker.x < 200, choice === 'a');
+  }
+});
+
 test('reserves room for the reader in the selected score band', () => {
   const dots = Array.from({ length: 44 }, (_, id) => ({
     id: String(id), score: id < 40 ? 8 as const : 0 as const, country: 'EE', answers: {},

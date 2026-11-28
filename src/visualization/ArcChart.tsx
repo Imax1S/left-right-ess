@@ -4,7 +4,7 @@ import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, offArcAnswerColumns, offArcLayout, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, offArcLayout, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
@@ -15,8 +15,8 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
-  offArc?: { share: number; answerShare?: number | null; labels?: readonly [string, string] };
-  understandingCircle?: { share: string | null };
+  offArc?: { count: number; answerShare?: number | null };
+  understandingCircle?: { share: string | null; countries: number };
   onPlace?: (score: Score) => void;
 }
 
@@ -60,15 +60,15 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
       : null,
     [dots, inCircle, question, choice, destination, arc.radius],
   );
-  const offArcShare = offArc?.share ?? 0;
-  const offArcCount = offArcShare < 100 ? Math.round(dots.length * offArcShare / (100 - offArcShare)) : 0;
+  const offArcCount = offArc?.count ?? 0;
+  const onArcDots = useMemo(() => dots.slice(0, dots.length - offArcCount), [dots, offArcCount]);
   const offArcIds = useMemo(
     () => Array.from({ length: offArcCount }, (_, index) => 'off-arc-' + index), [offArcCount],
   );
   const answerShare = offArc?.answerShare;
   const offArcPoints = offArcLayout(offArcCount, answerShare);
   const offArcHighlighted = answerShare == null ? offArcCount : Math.round(offArcCount * answerShare / 100);
-  const circle = useMemo(() => inCircle ? circleLayout(dots, offArcIds) : null, [dots, inCircle, offArcIds]);
+  const circle = useMemo(() => inCircle ? circleLayout(onArcDots, offArcIds) : null, [onArcDots, inCircle, offArcIds]);
   const understandingShare = understandingCircle?.share;
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
@@ -143,13 +143,14 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
     <figure className={figureClass} aria-label={circle
       ? (offArcCount ? 'The respondents from the arc, yellow dots for those without a mark, and your marker form a circle.'
         : 'The same respondents and your marker form a circle.')
-        + (understandingShare ? ' Among those without a mark, ' + understandingShare + ' chose “More like me”.' : '')
+        + (understandingShare ? ' Across the countries in this story, ' + understandingShare
+          + ' of people who answered the question said the description was somewhat to very much like them.' : '')
       : captions && question && choice
       ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
-        + (offArcCount ? ' Yellow dots inside the arc represent the weighted share without a mark.' : '')}>
+        + (offArcCount ? ' ' + offArcCount + ' yellow dots inside the arc represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
@@ -170,8 +171,9 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             <circle cx={circleCentre.x} cy={circleCentre.y} r="82" className="circle-core" />
             {understandingShare && <text x={circleCentre.x} y={circleCentre.y - 7} className="circle-number">
               {understandingShare}
-              <tspan x={circleCentre.x} dy="20" className="circle-label">of people without a mark</tspan>
-              <tspan x={circleCentre.x} dy="14" className="circle-label">chose “More like me”</tspan>
+              <tspan x={circleCentre.x} dy="18" className="circle-label">said the description was</tspan>
+              <tspan x={circleCentre.x} dy="13" className="circle-label">somewhat to very much like them</tspan>
+              <tspan x={circleCentre.x} dy="14" className="circle-scope">Across {understandingCircle?.countries} countries in this story</tspan>
             </text>}
           </g>
           {dots.map((person, index) => {
@@ -182,7 +184,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             const side = sideOf(person.score);
             const sameScore = person.score === score;
             const highlighted = highlightedIds?.has(person.id);
-            const opacity = circlePoint ? (person.answers.understanding === 'a' ? 0.94 : 0.35)
+            const opacity = index >= onArcDots.length ? 0
+              : circlePoint ? (person.answers.understanding === 'a' ? 0.94 : 0.35)
               : offArc ? 0.38
               : groups ? (answerPoint ? 1 : 0) : highlightedIds
               ? highlighted ? 1 : 0.27
@@ -206,10 +209,6 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             };
             return <g key={id} className="respondent off-arc-dot" style={style}><circle r={point.r} /></g>;
           })}
-          {!circle && answerShare != null && offArc?.labels?.map((label, index) =>
-            <text key={index} x={offArcAnswerColumns[index]} y="190" className="off-arc-plot-label">
-              {label}
-            </text>)}
           <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
             <ReaderGlyph score={score} />
           </g>
@@ -234,7 +233,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
         </div>}
       </div>
       {!canPlace && !circle && !offArc && score !== null && <figcaption className="arc-caption">
-        <span className="arc-legend">People at your starting mark ({score})</span>
+        <span className="arc-legend">People in your starting sector</span>
         {omitted && <span className="arc-omitted">{omitted}</span>}
       </figcaption>}
     </figure>

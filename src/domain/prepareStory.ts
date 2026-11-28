@@ -1,4 +1,4 @@
-import { choices, sideOf, sides } from './model.ts';
+import { choices, questionChoices, sideOf, sides } from './model.ts';
 import type { Choice, Question, Respondent, StoryConfig, StoryData, StoryQuestion, SurveyAdapter } from './model.ts';
 import { summarizeResponsePatterns } from './responsePatterns.ts';
 import { sampleRespondents } from './sample.ts';
@@ -61,6 +61,9 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
   const { source, countries, questions, people, unplaced } = await adapter.load(config);
   if (!people.length) throw new Error('The selected countries have no eligible respondents');
   const compared = questions.map(question => ({ ...question, ...summarize(people, question) }));
+  const displayedChoices = questions.map(questionChoices);
+  const complete = people.filter(person => questions.every((question, index) =>
+    displayedChoices[index].some(choice => choice === person.answers[question.id])));
   const vote = config.questions.indexOf('vote');
   const actTwo = vote >= 0 && config.questions.indexOf('understanding') > vote;
   return {
@@ -70,6 +73,6 @@ export async function prepareStory(adapter: SurveyAdapter, config: StoryConfig):
     responsePatterns: summarizeResponsePatterns(people, compared),
     disillusioned: actTwo && unplaced ? summarizeEngagement(people, unplaced) : null,
     eligibleCount: people.length,
-    dots: sampleRespondents(people, countries, config.dotCount),
+    dots: sampleRespondents(complete, countries, config.dotCount),
   };
 }
