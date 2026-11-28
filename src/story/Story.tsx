@@ -152,7 +152,7 @@ export function Story({ data, hidden, privacyLinks }: { data: StoryData; hidden:
       : answer === 'Agree' || answer === 'Disagree'
       ? 'You ' + answer.toLowerCase()
       : 'You chose “' + (answer ?? '') + '”';
-    controls = <ResultControls question={result.question} choice={result.choice} alignment={result.alignment}
+    controls = <ResultControls question={result.question} choice={result.choice}
       continueLabel={final ? 'See the takeaway' : voteQuestion ? 'Continue' : 'Next question'} onContinue={next} />;
   } else if (state.step === 'missing-prompt') {
     heading = 'Are we missing anyone?';
@@ -193,7 +193,7 @@ export function Story({ data, hidden, privacyLinks }: { data: StoryData; hidden:
           {(step === 'among' || question || actTwoScreen) && <button className="back-button" onClick={() => navigate({ type: 'back' })}>
             <Arrow back /> Back
           </button>}
-          {!actTwoScreen && step !== 'conclusion' && <span>{index < 0 ? 'Set-up' : `Question ${index + 1} of ${data.questions.length}`}</span>}
+          {question && step !== 'conclusion' && <span>Question {index + 1} of {data.questions.length}</span>}
         </div>
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>

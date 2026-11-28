@@ -116,7 +116,7 @@ html:has(.story-grid) { scrollbar-gutter: stable; }
 .step-result .story-heading { font-size: clamp(22px, 5vw, 37px); }
 
 .story-visual {
-  --story-facts-height: 116px;
+  --story-facts-height: 94px;
   --story-visual-gap: 12px;
   grid-area: visual;
   min-width: 0;
@@ -282,6 +282,16 @@ html:has(.story-grid) { scrollbar-gutter: stable; }
 }
 .cluster-caption strong { font: 820 clamp(17px, 5vw, 31px)/1 var(--display); letter-spacing: -0.05em; }
 
+@media (width < 800px) {
+  .story-page:not(.step-act-two) .story-visual {
+    grid-template-rows: minmax(var(--story-facts-height), max-content) auto;
+  }
+  .is-result .chart-surface { padding-block-start: 49%; }
+  .is-result .arc-svg { position: absolute; inset: 0 auto auto 0; }
+  .is-result .cluster-caption { position: relative; inset: auto; }
+  .is-result .arc-legend { margin-block-start: 8px; }
+}
+
 .story-controls { grid-area: controls; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; min-width: 0; align-content: start; }
 .survey-intro h2, .filter-picker h2 {
   font-size: clamp(11px, 2.65vw, 14px);
@@ -437,13 +447,6 @@ html:has(.story-grid) { scrollbar-gutter: stable; }
   border-radius: inherit;
   background: currentColor;
   animation: bar-in 340ms both;
-}
-.result-note {
-  margin-top: 13px;
-  padding-top: 10px;
-  border-top: 1px solid #cbbfa5;
-  font-size: clamp(12px, 3.2vw, 15px);
-  font-weight: 800;
 }
 .result-details { margin-top: 7px; color: var(--muted); font-size: 12px; }
 .result-details summary { width: fit-content; padding-block: 4px; cursor: pointer; font-weight: 770; }

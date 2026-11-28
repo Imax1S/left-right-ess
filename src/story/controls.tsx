@@ -1,6 +1,5 @@
 import { outerChoices, scores, sideLabels, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Score, StoryQuestion } from '../domain/model.ts';
-import type { AnswerAlignment } from './answerAlignment.ts';
 
 export const integer = new Intl.NumberFormat('en-GB');
 export const sharePercent = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
@@ -92,19 +91,10 @@ export function formatShare(percent: number | null) {
   return percent === null ? '—' : sharePercent.format(percent) + '%';
 }
 
-export function ResultControls({ question, choice, alignment, continueLabel, onContinue }: {
-  question: StoryQuestion; choice: Choice; alignment: AnswerAlignment;
+export function ResultControls({ question, choice, continueLabel, onContinue }: {
+  question: StoryQuestion; choice: Choice;
   continueLabel: string; onContinue: () => void;
 }) {
-  const { gap, side: moreCommonOn } = alignment;
-  const note = gap === null
-    ? 'A comparison needs responses from at least two groups.'
-    : moreCommonOn === null
-      ? 'The highest shares are tied at the displayed precision.'
-      : moreCommonOn === 'centre'
-        ? 'Most common among people who chose 5.'
-        : 'Most common on the ' + moreCommonOn + '.';
-
   return <>
     <section className="result-comparison" aria-labelledby="result-comparison-heading">
       <h2 id="result-comparison-heading">Who chose the same answer?</h2>
@@ -120,7 +110,6 @@ export function ResultControls({ question, choice, alignment, continueLabel, onC
           </div>;
         })}
       </div>
-      <p className="result-note">{note}</p>
     </section>
     <Continue onClick={onContinue}>{continueLabel}</Continue>
   </>;
