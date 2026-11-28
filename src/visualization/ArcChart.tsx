@@ -5,7 +5,7 @@ import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
   answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, closingBand, comparisonHeight, offArcLayout, placementBand,
-  readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
+  readerOnArc, scoreBand, scoreDivider, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
 
@@ -21,6 +21,8 @@ interface Props {
 }
 
 type MotionStyle = CSSProperties & { '--delay'?: string };
+
+const fullArc = arcBand(0, Math.PI);
 
 const closingBands = sides.map(side => {
   const frames = Array.from({ length: 25 }, (_, index) => {
@@ -84,6 +86,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
   const selected = circle?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = moveTo(selected);
   const bands = groups?.bands;
+  const selectedBand = bands?.find(band => band.option === choice);
   const omitted = groups && [
     groups.missing > 0 ? groups.missing + ' no recorded answer' : '',
     groups.other > 0 ? groups.other + ' outside the answer groups' : '',
@@ -166,17 +169,21 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
           <g className={groups || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
-            {sides.map(side => <path key={side} className={`placement-band ${side}`} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
-            {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
+            {sides.map(side => <path key={side} className={`placement-band ${side}${showPlacementHint ? ' is-unplaced' : ''}`} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
+            {showPlacementHint && <>
+              {scores.slice(1).map(mark => <path key={mark} className="score-guide" d={scoreDivider(mark)} />)}
+              <path className="placement-outline" d={fullArc} />
+            </>}
             {score !== null && !offArc && <path className="score-band" d={scoreBand(score)} />}
             {pointerLine && !offArc && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
             {!offArc && !showPlacementHint && <text className="arc-end" x="200" y="211">5</text>}
             <text className="arc-end" x="332" y="211">10</text>
           </g>
-          <g className={bands ? 'chart-layer' : 'chart-layer is-hidden'}>
-            {bands?.map(({ option, path }) =>
-              <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
+          <g className={bands ? 'chart-layer answer-canvas' : 'chart-layer answer-canvas is-hidden'}>
+            {bands?.map(({ option, path }) => option !== choice && option !== 'neutral' &&
+              <path key={option} d={path} className="answer-band" />)}
+            {selectedBand && <path d={selectedBand.path} className="answer-band selected" />}
           </g>
           {circle && <g ref={closureRef} className="arc-closure">
             {closingBands.map(({ side, start, values }) =>
@@ -230,7 +237,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
           <g ref={markerRef} className="reader-marker" style={{ transform: markerTransform }}>
             <ReaderGlyph score={score} />
           </g>
-          {onPlace && <path className="arc-tap-area" d={arcBand(0, Math.PI)}
+          {onPlace && <path className="arc-tap-area" d={fullArc}
             onClick={event => placeAt(event.clientX, event.clientY)} />}
         </svg>
         {showPlacementHint && <p className="arc-start-hint" aria-hidden="true">Pick a sector</p>}

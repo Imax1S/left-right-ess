@@ -11,8 +11,6 @@ export const circleRadii = { outer: 124, inner: 82 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
-const middleBandRadius = inner - 6;
-const middleScale = 0.9;
 const readerClearance = 21;
 export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
@@ -87,6 +85,13 @@ function scoreAngles(score: Score): [number, number] {
 
 export function scoreBand(score: Score) {
   return arcBand(...scoreAngles(score));
+}
+
+export function scoreDivider(score: Score) {
+  const [angle] = scoreAngles(score);
+  const from = polar(angle, inner);
+  const to = polar(angle, outer);
+  return `M ${from.x} ${from.y} L ${to.x} ${to.y}`;
 }
 
 function placementAngles(side: Side): [number, number] {
@@ -229,8 +234,8 @@ export function answerLayout(
   const groups = options.map((option, i) => ({
     option,
     people: dots.filter(dot => dot.answers[question.id] === option),
-    start: i === 0 ? 0 : Math.PI / 2 + 0.025,
-    end: i === 0 ? Math.PI / 2 - 0.025 : Math.PI,
+    start: i === 0 ? 0 : Math.PI / 2,
+    end: i === 0 ? Math.PI / 2 : Math.PI,
   }));
 
   let marker = { x: origin.x, y: origin.y - inner / 2 };
@@ -240,8 +245,10 @@ export function answerLayout(
     marker = polar(Math.max(selected.start + 0.17, Math.min(selected.end - 0.17, preferredAngle)), 132);
   }
   let r = radiusLimit;
-  const makeSlots = () => groups.map(({ option, people, start, end }) => bandSlots(start, end, r, people.length)
-    .filter(point => option !== choice || clearOfReader(point, marker, r)));
+  const makeSlots = () => groups.map(({ option, people, start, end }) => {
+    if (option !== choice || !people.length) return bandSlots(start, end, r, people.length);
+    return bandSlots(start, end, r, Math.max(2, people.length)).filter(point => clearOfReader(point, marker, r));
+  });
   let slots = makeSlots();
   while (groups.some(({ people }, i) => slots[i].length < people.length)) {
     r *= 0.88;
@@ -252,24 +259,22 @@ export function answerLayout(
 
   if (middlePeople?.length) {
     let middleRadius = radiusLimit;
-    const available = () => hollowSlots(middleRadius).map(({ x, y }) => ({
-      x: origin.x + (x - origin.x) * middleScale,
-      y: origin.y + (y - origin.y) * middleScale,
-    })).filter(point => choice !== 'neutral' || clearOfReader(point, marker, middleRadius * middleScale));
+    const available = () => hollowSlots(middleRadius)
+      .filter(point => choice !== 'neutral' || clearOfReader(point, marker, middleRadius));
     let points = available();
     while (points.length < middlePeople.length) {
       middleRadius *= 0.88;
       points = available();
     }
     placed.push(...spread(points, middlePeople.length)
-      .map((point, i) => ({ ...point, r: middleRadius * middleScale, person: middlePeople[i] })));
+      .map((point, i) => ({ ...point, r: middleRadius, person: middlePeople[i] })));
   }
   const bands = groups.map(({ option, people, start, end }): { option: Choice; count: number; path: string } => ({
     option, count: people.length, path: arcBand(start, end),
   }));
   if (middlePeople !== null) {
     const { x, y } = origin;
-    const r = middleBandRadius;
+    const r = inner;
     bands.splice(1, 0, { option: 'neutral', count: middlePeople.length, path: `M ${x - r} ${y} A ${r} ${r} 0 0 1 ${x + r} ${y} Z` });
   }
   const missing = dots.filter(dot => !dot.answers[question.id] || dot.answers[question.id] === 'missing').length;
