@@ -83,9 +83,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
   const showPlacementHint = score === null && canPlace;
   const selected = circle?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
   const markerTransform = moveTo(selected);
-  const captions = groups && (groups.middle
-    ? [groups.bands[0], groups.middle, groups.bands[1]]
-    : groups.bands);
+  const bands = groups?.bands;
   const omitted = groups && [
     groups.missing > 0 ? groups.missing + ' no recorded answer' : '',
     groups.other > 0 ? groups.other + ' outside the answer groups' : '',
@@ -159,8 +157,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
         : 'The same respondents and your marker form a circle.')
         + (understandingShare ? ' Across the countries in this story, ' + understandingShare
           + ' of people who answered the question said the description was somewhat to very much like them.' : '')
-      : captions && question && choice
-      ? 'Shown respondents by answer. ' + captions.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
+      : bands && question && choice
+      ? 'Shown respondents by answer. ' + bands.map(({ option, count }) => count + ' ' + question.options[option]).join(', ')
         + '. Your answer: ' + question.options[choice] + (omitted ? '. ' + omitted : '')
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
@@ -176,8 +174,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             {!offArc && !showPlacementHint && <text className="arc-end" x="200" y="211">5</text>}
             <text className="arc-end" x="332" y="211">10</text>
           </g>
-          <g className={groups ? 'chart-layer' : 'chart-layer is-hidden'}>
-            {groups?.bands.map(({ option, path }) =>
+          <g className={`chart-layer${!bands ? ' is-hidden' : bands.length === 3 ? ' has-neutral-answer' : ''}`}>
+            {bands?.map(({ option, path }) =>
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
           {circle && <g ref={closureRef} className="arc-closure">
@@ -243,8 +241,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
           <div className={`arc-drag-target ${pointers ? 'arc-drag-handle' : 'arc-drag-start'}`} aria-hidden="true"
             style={dragTargetStyle} onPointerDown={startDrag} onPointerMove={moveDrag} />
         </>}
-        {captions && question && <div className="cluster-caption">
-          {captions.map(({ option, count }) => (
+        {bands && question && <div className="cluster-caption">
+          {bands.map(({ option, count }) => (
             <div key={option} className={choice === option ? 'selected' : undefined} data-answer={option}>
               <span>{question.options[option]}</span>
               <strong>{count}</strong>

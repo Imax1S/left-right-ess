@@ -159,17 +159,17 @@ test('leaves out respondents on the question where they answered outside the two
   assert.deepEqual(answerLayout(dots, question('second'), 'a', 2).dots.map(dot => dot.person.id), ['1']);
 });
 
-test('packs middle answers and the reader into the hollow without drawing a third band', () => {
+test('outlines all three answers and fits neutral respondents inside the middle band', () => {
   const dots = (['a', 'b', 'neutral', 'missing', 'other'] as const).map(option => ({
     id: option, country: 'EE', score: 5 as const, answers: { q: option },
   }));
   const layout = answerLayout(dots, question('q', 'Neither'), 'neutral', 5);
-  assert.deepEqual(layout.bands.map(band => [band.option, band.count]), [['a', 1], ['b', 1]]);
-  assert.equal(layout.middle?.count, 1);
+  assert.deepEqual(layout.bands.map(band => [band.option, band.count]), [['a', 1], ['neutral', 1], ['b', 1]]);
+  assert.match(layout.bands[1].path, /^M 133 190 A 67 67 .* 267 190 Z$/);
   assert.deepEqual(layout.dots.map(dot => dot.person.id).sort(), ['a', 'b', 'neutral']);
   const middle = layout.dots.find(dot => dot.person.id === 'neutral')!;
-  assert.ok(Math.hypot(middle.x - 200, middle.y - 190) + middle.r < 73);
-  assert.ok(Math.hypot(layout.marker.x - 200, layout.marker.y - 190) + 17 < 73);
+  assert.ok(Math.hypot(middle.x - 200, middle.y - 190) + middle.r < 67);
+  assert.ok(Math.hypot(layout.marker.x - 200, layout.marker.y - 190) + 17 < 67);
   assert.ok(Math.hypot(middle.x - layout.marker.x, middle.y - layout.marker.y) >= middle.r + 17);
   assert.equal(layout.missing, 1);
   assert.equal(layout.other, 1);

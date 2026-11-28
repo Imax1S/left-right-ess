@@ -11,6 +11,8 @@ export const circleRadii = { outer: 124, inner: 82 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
+const middleBandRadius = inner - 6;
+const middleScale = 0.9;
 const readerClearance = 21;
 export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
@@ -250,22 +252,31 @@ export function answerLayout(
 
   if (middlePeople?.length) {
     let middleRadius = radiusLimit;
-    const available = () => hollowSlots(middleRadius)
-      .filter(point => choice !== 'neutral' || clearOfReader(point, marker, middleRadius));
+    const available = () => hollowSlots(middleRadius).map(({ x, y }) => ({
+      x: origin.x + (x - origin.x) * middleScale,
+      y: origin.y + (y - origin.y) * middleScale,
+    })).filter(point => choice !== 'neutral' || clearOfReader(point, marker, middleRadius * middleScale));
     let points = available();
     while (points.length < middlePeople.length) {
       middleRadius *= 0.88;
       points = available();
     }
     placed.push(...spread(points, middlePeople.length)
-      .map((point, i) => ({ ...point, r: middleRadius, person: middlePeople[i] })));
+      .map((point, i) => ({ ...point, r: middleRadius * middleScale, person: middlePeople[i] })));
+  }
+  const bands = groups.map(({ option, people, start, end }): { option: Choice; count: number; path: string } => ({
+    option, count: people.length, path: arcBand(start, end),
+  }));
+  if (middlePeople !== null) {
+    const { x, y } = origin;
+    const r = middleBandRadius;
+    bands.splice(1, 0, { option: 'neutral', count: middlePeople.length, path: `M ${x - r} ${y} A ${r} ${r} 0 0 1 ${x + r} ${y} Z` });
   }
   const missing = dots.filter(dot => !dot.answers[question.id] || dot.answers[question.id] === 'missing').length;
   return {
     marker,
     dots: placed,
-    bands: groups.map(({ option, people, start, end }) => ({ option, count: people.length, path: arcBand(start, end) })),
-    middle: middlePeople === null ? null : { option: 'neutral' as const, count: middlePeople.length },
+    bands,
     missing,
     other: dots.length - placed.length - missing,
   };
