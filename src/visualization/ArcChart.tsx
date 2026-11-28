@@ -15,7 +15,7 @@ interface Props {
   highlightedIds: ReadonlySet<string> | null;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
   offArc?: { count: number; answerShare?: number | null };
-  understandingCircle?: { share: string | null; countries: number };
+  understandingShare?: string | null;
   onPlace?: (score: Score) => void;
 }
 
@@ -28,7 +28,7 @@ const circleStageStyle = {
 } as CSSProperties;
 
 const closingThickness = circleRadii.outer - circleRadii.inner;
-const closingPaths = (['left', 'right'] as const).map(side => ({ side, path: closingArc(side) }));
+const closingPaths = (['left', 'right'] as const).map(closingArc);
 
 function moveTo({ x, y }: Point) {
   return `translate(${x}px, ${y}px)`;
@@ -51,7 +51,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
 }
 
 export function ArcChart({ dots, score, highlightedIds, result, offArc,
-  understandingCircle, onPlace }: Props) {
+  understandingShare, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
@@ -61,7 +61,7 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
   const question = result?.question;
   const choice = result?.choice;
   const destination = result?.alignment.score;
-  const inCircle = understandingCircle !== undefined;
+  const inCircle = understandingShare !== undefined;
   const bounds = inCircle ? circleViewBox : viewBox;
   const groups = useMemo(
     () => !inCircle && question && choice && destination !== undefined
@@ -78,7 +78,6 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
   const offArcPoints = useMemo(() => offArcLayout(offArcCount), [offArcCount]);
   const offArcHighlighted = answerShare == null ? offArcCount : Math.round(offArcCount * answerShare / 100);
   const circle = useMemo(() => inCircle ? circleLayout(onArcDots, offArcIds) : null, [onArcDots, inCircle, offArcIds]);
-  const understandingShare = understandingCircle?.share;
   const pointers = score === null ? null : readerOnArc(score);
   const showPlacementHint = score === null && canPlace;
   const selected = circle?.marker ?? groups?.marker ?? pointers?.marker ?? unplacedMarker;
@@ -179,25 +178,16 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
             {selectedBand && <path d={selectedBand.path} className="answer-band selected" />}
           </g>
           {circle && <g className="arc-closure">
+            <g className="closure-upper"><path d={fullArc} /></g>
             <g className="closure-lower" fill="none">
-              {closingPaths.map(({ side, path }) => <g key={side}>
-                <path d={path} pathLength="1" strokeWidth={closingThickness + 1.4} className="closure-edge" />
-                <path d={path} pathLength="1" strokeWidth={closingThickness - 1.4} stroke={'var(--' + side + '-pale)'} />
-              </g>)}
-            </g>
-            <g className="closure-upper">
-              {sides.map(side => <path key={side} d={placementBand(side)} className="placement-band" fill={'var(--' + side + '-pale)'} />)}
+              {closingPaths.map(path => <path key={path} d={path} pathLength="1" strokeWidth={closingThickness} />)}
             </g>
           </g>}
           {circle && <g className="circle-canvas">
             <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.outer} className="circle-outline" />
             <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.inner} className="circle-core" />
-            {understandingShare && <text x={circleCentre.x} y={circleCentre.y - 16} className="circle-number">
+            {understandingShare && <text x={circleCentre.x} y={circleCentre.y} className="circle-number">
               {understandingShare}
-              <tspan x={circleCentre.x} dy="18" className="circle-label">said the description was</tspan>
-              <tspan x={circleCentre.x} dy="13" className="circle-label">somewhat to very much</tspan>
-              <tspan x={circleCentre.x} dy="13" className="circle-label">like them</tspan>
-              <tspan x={circleCentre.x} dy="14" className="circle-scope">Across {understandingCircle?.countries} countries</tspan>
             </text>}
           </g>}
           {dots.map((person, index) => {

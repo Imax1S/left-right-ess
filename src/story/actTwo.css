@@ -71,20 +71,24 @@ html:has(.story-page.is-closing-result:not([hidden])) {
   to { opacity: 1; }
 }
 .is-understanding .chart-surface {
+  --circle-band: #f5e7c5;
   aspect-ratio: var(--circle-ratio);
   animation: extend-chart 700ms ease-out both;
 }
 .is-understanding .arc-svg { position: absolute; inset: 0 auto auto 0; }
 @keyframes extend-chart { from { aspect-ratio: var(--arc-ratio); } }
-.circle-outline { fill: #f5e7c5; stroke: #c6b99f; stroke-width: 1.3px; }
+.circle-outline { fill: var(--circle-band); stroke: #c6b99f; stroke-width: 1.3px; }
 .circle-core { fill: #ffe9a6; }
-.circle-number, .circle-label, .circle-scope { fill: var(--ink); text-anchor: middle; }
-.circle-number { font: 840 34px var(--display); letter-spacing: -0.06em; }
-.circle-label { font: 800 9.3px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
-.circle-scope { font: 700 8px 'Manrope Variable', system-ui, sans-serif; letter-spacing: normal; }
+.circle-number {
+  fill: var(--ink);
+  text-anchor: middle;
+  dominant-baseline: central;
+  font: 840 27px var(--display);
+  letter-spacing: -0.06em;
+}
 .arc-closure { animation: closing-band-fade 1100ms linear both; }
-.closure-lower path { stroke-dasharray: 1; animation: close-arc 900ms ease-in-out both; }
-.closure-edge { stroke: color-mix(in srgb, var(--ink) 56%, var(--cream)); }
+.closure-upper { fill: var(--circle-band); }
+.closure-lower path { stroke: var(--circle-band); stroke-dasharray: 1; animation: close-arc 900ms ease-in-out both; }
 @keyframes close-arc { from { stroke-dashoffset: 1; } }
 .circle-canvas { animation: act-two-reveal 230ms ease 900ms both; }
 @keyframes closing-band-fade {

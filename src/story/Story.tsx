@@ -51,10 +51,7 @@ export function Story({ data, hidden, privacyLinks }: { data: StoryData; hidden:
     : closingCircle ? ' is-closing-result' : closingQuestion ? ' is-closing-question' : '';
   const outside = data.disillusioned;
   const understandingShare = outside?.understandingPercent ?? null;
-  const understandingCircle = closingCircle ? {
-    share: understandingShare === null ? null : formatShare(understandingShare),
-    countries: data.countries.length,
-  } : undefined;
+  const circleShare = understandingShare === null ? null : formatShare(understandingShare);
   const offArc = outside && (isOffArcStep(step) || closingQuestion) ? {
     count: Math.round(data.dots.length * outside.unplacedSharePercent / 100),
     answerShare: offArcQuestion ? outside.groups.unplaced[offArcQuestion.field]
@@ -212,7 +209,7 @@ export function Story({ data, hidden, privacyLinks }: { data: StoryData; hidden:
         </div>
         <div className="story-plot">
           <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
-            result={result} offArc={offArc} understandingCircle={understandingCircle}
+            result={result} offArc={offArc} understandingShare={closingCircle ? circleShare : undefined}
             onPlace={step === 'scale' ? place : undefined} />
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
         </div>
