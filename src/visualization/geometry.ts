@@ -7,6 +7,7 @@ interface PlacedDot extends Point { person: Dot; r: number }
 export const viewBox = { width: 400, height: 242 };
 export const comparisonHeight = 264;
 export const circleCentre: Point = { x: viewBox.width / 2, y: comparisonHeight / 2 };
+export const circleRadii = { outer: 124, inner: 82 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
@@ -15,10 +16,10 @@ export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
 
 export const offArcCentre: Point = { x: origin.x, y: 163 };
-const offArcAnswerColumns = [168, 232] as const;
 
-function dotCluster(count: number, x: number, width: number) {
+export function offArcLayout(count: number) {
   if (!count) return [];
+  const width = 56;
   const height = 30;
   const columns = Math.min(count, Math.ceil(Math.sqrt(count * width / height)));
   const rows = Math.ceil(count / columns);
@@ -27,20 +28,11 @@ function dotCluster(count: number, x: number, width: number) {
     const row = Math.floor(index / columns);
     const rowSize = Math.min(columns, count - row * columns);
     return {
-      x: x + (index % columns - (rowSize - 1) / 2) * pitch,
+      x: offArcCentre.x + (index % columns - (rowSize - 1) / 2) * pitch,
       y: offArcCentre.y + (row - (rows - 1) / 2) * pitch,
       r: Math.min(4.4, pitch * 0.44),
     };
   });
-}
-
-export function offArcLayout(count: number, answerShare?: number | null) {
-  if (answerShare == null) return dotCluster(count, offArcCentre.x, 56);
-  const first = Math.round(count * answerShare / 100);
-  return [
-    ...dotCluster(first, offArcAnswerColumns[0], 42),
-    ...dotCluster(count - first, offArcAnswerColumns[1], 42),
-  ];
 }
 
 export function circleLayout(dots: readonly Dot[], offArcIds: readonly string[] = []) {
@@ -95,10 +87,31 @@ export function scoreBand(score: Score) {
   return arcBand(...scoreAngles(score));
 }
 
-export function placementBand(side: Side) {
+function placementAngles(side: Side): [number, number] {
   const [start, end] = scoreAngles(5);
-  if (side === 'centre') return arcBand(start, end);
-  return side === 'left' ? arcBand(0, start) : arcBand(end, Math.PI);
+  if (side === 'centre') return [start, end];
+  return side === 'left' ? [0, start] : [end, Math.PI];
+}
+
+export function placementBand(side: Side) {
+  return arcBand(...placementAngles(side));
+}
+
+export function closingBand(side: Side, progress: number) {
+  const [start, end] = placementAngles(side);
+  const radiusProgress = progress * (2 - progress);
+  const outerRadius = outer + (circleRadii.outer - outer) * radiusProgress;
+  const startTop = origin.y - outer;
+  const endTop = circleCentre.y - circleRadii.outer;
+  const centreY = outerRadius + startTop + (endTop - startTop) * progress;
+  const innerRadius = inner + (circleRadii.inner - inner) * progress;
+  // Keep the crown at the top while both ends sweep toward the bottom.
+  const point = (angle: number, radius: number) => {
+    const swept = Math.PI / 2 + (angle - Math.PI / 2) * (1 + progress);
+    return `${origin.x - Math.cos(swept) * radius} ${centreY - Math.sin(swept) * radius}`;
+  };
+  return `M ${point(start, outerRadius)} A ${outerRadius} ${outerRadius} 0 0 1 ${point(end, outerRadius)}
+    L ${point(end, innerRadius)} A ${innerRadius} ${innerRadius} 0 0 0 ${point(start, innerRadius)} Z`;
 }
 
 export function scoreSectorOutline(score: Score): Point[] {

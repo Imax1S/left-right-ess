@@ -7,7 +7,7 @@ import { Arrow, Continue, QuestionControls, ResultControls, ScaleControls, Surve
   formatShare, integer } from './controls.tsx';
 import { answerAlignment } from './answerAlignment.ts';
 import { ExploreControls } from './ExploreControls.tsx';
-import { OffArcAnswerDetails, offArcQuestions, UnderstandingResult } from './ActTwo.tsx';
+import { OffArcAnswerDetails, offArcQuestions, UnderstandingComparison, UnderstandingResult } from './ActTwo.tsx';
 import { matchesHighlights } from './highlights.ts';
 import { ShareTakeaway } from './ShareTakeaway.tsx';
 import { groupMatch, takeawayExamples } from './takeaway.ts';
@@ -134,7 +134,7 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
     controls = takeaway;
   } else if (closingCircle && result && data.disillusioned) {
     heading = 'Understanding is common ground.';
-    controls = <UnderstandingResult data={data.disillusioned} answer={result.question.options[result.choice] ?? ''}
+    controls = <UnderstandingResult answer={result.question.options[result.choice] ?? ''}
       onContinue={next} />;
   } else if (state.step === 'result' && result) {
     const final = index === data.questions.length - 1;
@@ -293,6 +293,7 @@ function Takeaway({ data, score, answers, openingHeading, onRestart }: {
           })}
         </div>
       </section>
+      {data.disillusioned && <UnderstandingComparison data={data.disillusioned} />}
       {(agreement || widest) && <section aria-labelledby="group-patterns">
         <h2 id="group-patterns">Where the groups agreed and differed</h2>
         <div className="conclusion-cards">

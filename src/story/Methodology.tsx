@@ -147,7 +147,7 @@ export function Methodology({ data }: { data: StoryData }) {
       {data.disillusioned && <details className="method-disclosure">
         <summary>Who the yellow dots represent</summary>
         <p>{integer.format(data.disillusioned.unplacedCount)} of {integer.format(data.disillusioned.eligibleTotalCount)} eligible respondents had no recorded mark from 0 to 10. Low trust in parliament is 0–4 on its 0–10 scale. The little-or-no-say share combines the two lowest responses about political influence.</p>
-        <p>The yellow dots take the place of a rounded share of the original dots to illustrate the weighted proportion without a left–right mark. Their clusters illustrate weighted answers from this group.</p>
+        <p>The yellow dots take the place of a rounded share of the original dots to illustrate the weighted proportion without a left–right mark. The highlighted dots illustrate this group’s weighted answers, rounded to the nearest dot.</p>
         <p>The closing circle uses valid answers to the understanding question from all {data.countries.length} countries in the story, including people without a left–right mark. “Somewhat to very much like me” combines the first three of the six original response options.</p>
       </details>}
       <div className="method-question-grid">

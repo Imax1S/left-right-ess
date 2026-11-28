@@ -29,24 +29,27 @@ export function OffArcAnswerDetails({ question, data, onContinue }: {
   return <div className="act-two-panel">
     {share === null ? <p>No recorded answers for this group.</p> : <p className="off-arc-stat">
       <strong>{formatShare(share)}</strong>{' '}
-      <span>{question.caption}<small>Among people without a left–right mark who answered.</small></span>
+      <span>{question.caption}</span>
     </p>}
     <Continue onClick={onContinue}>{question.next}</Continue>
   </div>;
 }
 
-export function UnderstandingResult({ data, answer, onContinue }: {
-  data: DisillusionedSummary; answer: string; onContinue: () => void;
+export function UnderstandingResult({ answer, onContinue }: {
+  answer: string; onContinue: () => void;
 }) {
   return <div className="act-two-panel">
     <p>You chose <strong>{answer}</strong>.</p>
-    <details className="result-details">
-      <summary>Compare all four groups</summary>
-      <dl>{surveyedGroups.map(group => <div key={group}>
-        <dt>{groupLabels[group]}</dt><dd>{formatShare(data.groups[group].understandingPercent ?? null)}</dd>
-      </div>)}</dl>
-      <p>Weighted shares who said the description was somewhat to very much like them.</p>
-    </details>
     <Continue onClick={onContinue}>See the takeaway</Continue>
   </div>;
+}
+
+export function UnderstandingComparison({ data }: { data: DisillusionedSummary }) {
+  return <section className="result-details" aria-labelledby="understanding-comparison">
+    <h2 id="understanding-comparison">Understanding others across groups</h2>
+    <dl>{surveyedGroups.map(group => <div key={group}>
+      <dt>{groupLabels[group]}</dt><dd>{formatShare(data.groups[group].understandingPercent)}</dd>
+    </div>)}</dl>
+    <p>Weighted shares who said the description was somewhat to very much like them.</p>
+  </section>;
 }

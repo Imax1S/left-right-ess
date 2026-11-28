@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface ShareStat {
   title: string;
@@ -37,12 +37,12 @@ function shareImage(result: string, group: string, stats: readonly ShareStat[]):
   context.fillRect(0, 0, canvas.width, canvas.height);
   text('LEFT.', 40, 54, `800 22px ${body}`, '#c43f26');
   text('RIGHT.', 108, 54, `800 22px ${body}`, '#2947bd');
-  text('A label tells part of the story.', 40, 123, `800 39px ${display}`);
+  text('My results', 40, 123, `800 47px ${display}`);
 
   card(40, 158, 880, 214, '#fff7e3');
   text(result, 66, 270, `820 74px ${display}`);
-  text(group, 66, 310, `800 25px ${body}`);
-  text('Answers matching the most common choice in my group', 66, 344, `650 25px ${body}`);
+  text('My starting group · ' + group, 66, 310, `800 25px ${body}`);
+  text('of my answers matched my group’s most common choice.', 66, 344, `650 25px ${body}`);
 
   const width = (880 - 16 * (stats.length - 1)) / stats.length;
   stats.forEach(({ title, value }, index) => {
@@ -65,6 +65,12 @@ export function ShareTakeaway({ result, group, stats }: {
 }) {
   const [status, setStatus] = useState('');
   const [sharing, setSharing] = useState(false);
+
+  useEffect(() => {
+    if (!status) return;
+    const timer = window.setTimeout(() => setStatus(''), 2500);
+    return () => window.clearTimeout(timer);
+  }, [status]);
 
   async function share() {
     setSharing(true);
@@ -96,6 +102,6 @@ export function ShareTakeaway({ result, group, stats }: {
 
   return <div className="takeaway-share">
     <button onClick={share} disabled={sharing}>Share</button>
-    <span role="status">{status}</span>
+    <span role="status" className="share-toast">{status}</span>
   </div>;
 }

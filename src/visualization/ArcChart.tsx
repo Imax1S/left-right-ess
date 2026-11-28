@@ -4,7 +4,7 @@ import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, comparisonHeight, offArcLayout, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, closingBand, comparisonHeight, offArcLayout, placementBand,
   readerOnArc, scoreBand, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
@@ -21,6 +21,14 @@ interface Props {
 }
 
 type MotionStyle = CSSProperties & { '--delay'?: string };
+
+const closingBands = sides.map(side => {
+  const frames = Array.from({ length: 25 }, (_, index) => {
+    const time = index / 24;
+    return closingBand(side, time * time * (3 - 2 * time));
+  });
+  return { side, start: frames[0], values: frames.join(';') };
+});
 
 function moveTo({ x, y }: Point) {
   return `translate(${x}px, ${y}px)`;
@@ -46,6 +54,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
   understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
+  const closureRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
   const dragPlacement = useRef(false);
   const canPlace = onPlace !== undefined;
@@ -66,7 +75,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
     () => Array.from({ length: offArcCount }, (_, index) => 'off-arc-' + index), [offArcCount],
   );
   const answerShare = offArc?.answerShare;
-  const offArcPoints = offArcLayout(offArcCount, answerShare);
+  const offArcPoints = useMemo(() => offArcLayout(offArcCount), [offArcCount]);
   const offArcHighlighted = answerShare == null ? offArcCount : Math.round(offArcCount * answerShare / 100);
   const circle = useMemo(() => inCircle ? circleLayout(onArcDots, offArcIds) : null, [onArcDots, inCircle, offArcIds]);
   const understandingShare = understandingCircle?.share;
@@ -94,6 +103,11 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
     left: `${unplacedMarker.x / viewBox.width * 100}%`,
     top: `${unplacedMarker.y / viewBox.height * 100}%`,
   };
+
+  useLayoutEffect(() => {
+    if (!inCircle || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    closureRef.current?.querySelectorAll('animate').forEach(animation => animation.beginElement());
+  }, [inCircle]);
 
   useLayoutEffect(() => {
     const entering = previousScore.current === null && score !== null;
@@ -153,29 +167,35 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
         + (offArcCount ? ' ' + offArcCount + ' yellow dots inside the arc represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
         <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
-          <g className={groups || circle ? 'chart-layer is-hidden' : 'chart-layer'}>
+          <g className={groups || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
             {sides.map(side => <path key={side} className={`placement-band ${side}`} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && scores.map(mark => <path key={mark} className="score-guide" d={scoreBand(mark)} />)}
             {score !== null && !offArc && <path className="score-band" d={scoreBand(score)} />}
             {pointerLine && !offArc && <path className="score-pointer" d={pointerLine} />}
             <text className="arc-end" x="68" y="211">0</text>
-            {!offArc && <text className="arc-end" x="200" y="211">5</text>}
+            {!offArc && !showPlacementHint && <text className="arc-end" x="200" y="211">5</text>}
             <text className="arc-end" x="332" y="211">10</text>
           </g>
           <g className={groups ? 'chart-layer' : 'chart-layer is-hidden'}>
             {groups?.bands.map(({ option, path }) =>
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
-          <g className={circle ? 'chart-layer circle-canvas' : 'chart-layer circle-canvas is-hidden'}>
-            <circle cx={circleCentre.x} cy={circleCentre.y} r="124" className="circle-outline" />
-            <circle cx={circleCentre.x} cy={circleCentre.y} r="82" className="circle-core" />
+          {circle && <g ref={closureRef} className="arc-closure">
+            {closingBands.map(({ side, start, values }) =>
+              <path key={side} d={start} fill={'var(--' + side + '-pale)'}>
+                <animate attributeName="d" values={values} calcMode="linear" begin="indefinite" dur="900ms" fill="freeze" />
+              </path>)}
+          </g>}
+          {circle && <g className="circle-canvas">
+            <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.outer} className="circle-outline" />
+            <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.inner} className="circle-core" />
             {understandingShare && <text x={circleCentre.x} y={circleCentre.y - 7} className="circle-number">
               {understandingShare}
               <tspan x={circleCentre.x} dy="18" className="circle-label">said the description was</tspan>
               <tspan x={circleCentre.x} dy="13" className="circle-label">somewhat to very much like them</tspan>
               <tspan x={circleCentre.x} dy="14" className="circle-scope">Across {understandingCircle?.countries} countries in this story</tspan>
             </text>}
-          </g>
+          </g>}
           {dots.map((person, index) => {
             const circlePoint = circle?.dots.get(person.id);
             const answerPoint = answerPositions?.get(person.id);
@@ -193,7 +213,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             const style: MotionStyle = {
               transform: moveTo(point),
               opacity,
-              '--delay': groups || circle ? (index % 15) * 20 + 'ms' : '0ms',
+              '--delay': circle ? (index % 8) * 9 + 'ms' : groups ? (index % 15) * 20 + 'ms' : '0ms',
             };
             return <g key={person.id} className={`respondent ${side}`} style={style}
               data-highlighted={highlighted ? 'true' : undefined}
@@ -204,8 +224,8 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
           {offArcIds.map((id, index) => {
             const point = circle?.dots.get(id) ?? offArcPoints[index];
             const style: MotionStyle = {
-              transform: moveTo(point), opacity: index < offArcHighlighted ? 0.95 : 0.5,
-              '--delay': circle ? index % 10 * 20 + 'ms' : '0ms',
+              transform: moveTo(point), opacity: index < offArcHighlighted ? 0.95 : 0.28,
+              '--delay': circle ? index % 8 * 9 + 'ms' : '0ms',
             };
             return <g key={id} className="respondent off-arc-dot" style={style}><circle r={point.r} /></g>;
           })}

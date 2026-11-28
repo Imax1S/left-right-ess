@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { arcLayout, answerLayout, circleLayout, comparisonHeight, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
+import { arcLayout, answerLayout, circleLayout, closingBand, comparisonHeight, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
 
 function question(id: string, neutral?: string) {
@@ -24,16 +24,12 @@ test('the closing circle retains every original dot and leaves space for the rea
   assert.equal(occupied.size, dots.length + offArc.length);
 });
 
-test('the symbolic off-arc dots split by answer inside the hollow and keep their count', () => {
+test('the symbolic off-arc dots fit in one centered group inside the hollow', () => {
   const together = offArcLayout(14);
   assert.equal(together.length, 14);
   const meanX = together.reduce((sum, dot) => sum + dot.x, 0) / together.length;
   assert.ok(Math.abs(meanX - 200) < 1e-6);
-  const split = offArcLayout(14, 59.8);
-  assert.equal(split.length, 14);
-  assert.equal(split.filter(dot => dot.x < 200).length, 8);
-  assert.equal(split.filter(dot => dot.x > 200).length, 6);
-  for (const group of [together, split, offArcLayout(100, 100), offArcLayout(100, 0)]) {
+  for (const group of [together, offArcLayout(100)]) {
     for (const [index, dot] of group.entries()) {
       assert.ok(Math.hypot(dot.x - 200, dot.y - 190) + dot.r < 73);
       for (const previous of group.slice(0, index)) {
@@ -41,6 +37,18 @@ test('the symbolic off-arc dots split by answer inside the hollow and keep their
       }
     }
   }
+});
+
+test('the ends of the arc sweep downward until they meet inside the chart', () => {
+  function ends(progress: number) {
+    const numbers = (side: 'left' | 'right') => closingBand(side, progress)
+      .match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number);
+    return [numbers('left').slice(0, 2), numbers('right').slice(7, 9)];
+  }
+
+  assert.deepEqual(ends(0).map(point => point.map(Math.round)), [[12, 190], [388, 190]]);
+  assert.ok(ends(0.5).every(([, y]) => y > 190 && y < comparisonHeight));
+  assert.deepEqual(ends(1).map(point => point.map(Math.round)), [[200, 256], [200, 256]]);
 });
 
 test('arc and all answer bands keep people in bounds without overlap', () => {
