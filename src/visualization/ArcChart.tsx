@@ -174,7 +174,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
             {!offArc && !showPlacementHint && <text className="arc-end" x="200" y="211">5</text>}
             <text className="arc-end" x="332" y="211">10</text>
           </g>
-          <g className={`chart-layer${!bands ? ' is-hidden' : bands.length === 3 ? ' has-neutral-answer' : ''}`}>
+          <g className={bands ? 'chart-layer' : 'chart-layer is-hidden'}>
             {bands?.map(({ option, path }) =>
               <path key={option} d={path} className={option === choice ? 'answer-band selected' : 'answer-band'} />)}
           </g>
