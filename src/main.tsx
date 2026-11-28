@@ -59,11 +59,11 @@ function App({ data }: { data: StoryData | null | undefined }) {
   const privacyLinks = <PrivacyLinks choice={showAnalyticsChoice ? choice : null} onChoice={chooseAnalytics} />;
 
   return <>
+    {data && <Story data={data} hidden={page !== 'story'} privacyLinks={privacyLinks} />}
     {page === 'story' && showAnalyticsChoice && choice === null && data && <ConsentPrompt onChoice={next => {
       chooseAnalytics(next);
       document.getElementById('story-heading')?.focus({ preventScroll: true });
     }} />}
-    {data && <Story data={data} hidden={page !== 'story'} privacyLinks={privacyLinks} />}
     {page === 'method' && data && <Methodology data={data} privacyLinks={privacyLinks} />}
     {page === 'privacy' && <Privacy choice={choice} onChoice={chooseAnalytics} available={showAnalyticsChoice} />}
     {page !== 'privacy' && !data && <main className="status">

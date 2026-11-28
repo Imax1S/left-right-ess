@@ -12,9 +12,9 @@ type Preferences = {
 function ChoiceButtons({ choice, onChoice }: Preferences) {
   return <div className="analytics-choice-buttons">
     <button type="button" aria-pressed={choice === null ? undefined : choice === 'allow'}
-      onClick={() => onChoice('allow')}>Allow analytics</button>
+      onClick={() => onChoice('allow')}>Allow</button>
     <button type="button" aria-pressed={choice === null ? undefined : choice === 'deny'}
-      onClick={() => onChoice('deny')}>Decline analytics</button>
+      onClick={() => onChoice('deny')}>Decline</button>
   </div>;
 }
 
