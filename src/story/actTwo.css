@@ -1,12 +1,9 @@
-.step-act-two .story-grid { gap: clamp(12px, 2vw, 22px); }
 .step-act-two .story-heading { max-width: 16ch; }
 .step-act-two.step-vote-result .story-heading {
   max-width: none;
   font-size: clamp(25px, 7vw, 44px);
 }
 .step-act-two.step-listening-bridge .story-heading { max-width: 18ch; }
-.step-act-two .story-plot { min-width: 0; }
-.step-act-two .story-visual { row-gap: 0; }
 .voting-cards {
   display: grid;
   grid-template-rows: 0fr;
@@ -15,7 +12,7 @@
 }
 .voting-cards.is-visible { grid-template-rows: 1fr; opacity: 1; }
 .voting-cards > div { min-height: 0; overflow: hidden; }
-.voting-cards .facts { padding-block-end: 28px; padding-inline-end: 7px; }
+.voting-cards .facts { padding-block-end: 8px; padding-inline-end: 7px; }
 .answer-options.single-answer { grid-template-columns: minmax(0, 1fr); }
 html { transition: filter 660ms ease, background-color 660ms ease; }
 html:has(.story-page.is-monochrome:not([hidden])) {
@@ -103,8 +100,7 @@ html:has(.story-page.is-closing-result:not([hidden])) {
 }
 
 @media (min-width: 800px) {
-  .step-act-two .story-grid { gap: 15px clamp(24px, 4vw, 72px); }
   .step-act-two.step-vote-result .story-heading { font-size: clamp(26px, 3.3vw, 49px); }
-  .voting-cards .facts { padding-block-end: calc(6px + clamp(32px, 5.5vw, 80px)); padding-inline-end: 10px; }
+  .voting-cards .facts { padding-block-end: 10px; padding-inline-end: 10px; }
   .step-conclusion .story-visual { position: sticky; top: 24px; }
 }

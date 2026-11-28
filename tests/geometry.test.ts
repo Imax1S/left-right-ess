@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { arcBand, arcLayout, answerLayout, circleLayout, closingBand, comparisonHeight, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
+import { arcBand, arcLayout, answerLayout, circleLayout, closingBand, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
 
 function question(id: string, neutral?: string) {
@@ -18,7 +18,7 @@ test('the closing circle retains every original dot and leaves space for the rea
   for (const id of [...dots.map(dot => dot.id), ...offArc]) {
     const { x, y, r } = circle.dots.get(id)!;
     occupied.add(x + ':' + y);
-    assert.ok(x >= r && x <= viewBox.width - r && y >= r && y <= comparisonHeight - r);
+    assert.ok(x >= r && x <= viewBox.width - r && y >= r && y <= viewBox.height - r);
     assert.ok(Math.hypot(x - circle.marker.x, y - circle.marker.y) >= r + 20);
   }
   assert.equal(occupied.size, dots.length + offArc.length);
@@ -47,7 +47,7 @@ test('the ends of the arc sweep downward until they meet inside the chart', () =
   }
 
   assert.deepEqual(ends(0).map(point => point.map(Math.round)), [[12, 190], [388, 190]]);
-  assert.ok(ends(0.5).every(([, y]) => y > 190 && y < comparisonHeight));
+  assert.ok(ends(0.5).every(([, y]) => y > 190 && y < viewBox.height));
   assert.deepEqual(ends(1).map(point => point.map(Math.round)), [[200, 256], [200, 256]]);
 });
 

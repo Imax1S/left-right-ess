@@ -49,6 +49,8 @@ a { color: inherit; text-underline-offset: 0.2em; }
 .right { color: var(--right); }
 .centre { color: var(--centre); }
 
+html:has(.story-grid) { scrollbar-gutter: stable; }
+
 .story-page {
   max-width: 580px;
   margin-inline: auto;
@@ -56,10 +58,11 @@ a { color: inherit; text-underline-offset: 0.2em; }
 }
 .story-grid {
   display: grid;
-  grid-template-areas: 'header' 'title' 'visual' 'controls';
+  grid-template-areas: 'header' 'visual' 'title' 'controls';
   align-content: start;
   gap: 16px;
   padding-top: 20px;
+  overflow-anchor: none;
 }
 .story-header {
   grid-area: header;
@@ -73,6 +76,7 @@ a { color: inherit; text-underline-offset: 0.2em; }
   text-transform: uppercase;
   font-weight: 850;
 }
+.story-grid .story-header { min-height: 30px; }
 .wordmark { white-space: nowrap; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 850; }
 .wordmark b:first-child { color: var(--left); }
 .wordmark b:last-child { color: var(--right); }
@@ -109,11 +113,10 @@ a { color: inherit; text-underline-offset: 0.2em; }
   border-radius: 0.12em;
   color: inherit;
 }
-.step-comparison { overflow-anchor: none; }
-.step-comparison .story-grid { grid-template-areas: 'header' 'visual' 'title' 'controls'; }
 .step-result .story-heading { font-size: clamp(22px, 5vw, 37px); }
 
-.story-visual { grid-area: visual; min-width: 0; display: grid; align-content: start; gap: 22px; }
+.story-visual { grid-area: visual; min-width: 0; display: grid; align-content: start; align-self: start; gap: 12px; }
+.story-plot { min-width: 0; }
 .facts { display: flex; align-items: start; gap: clamp(10px, 5vw, 28px); padding: 0 5px 6px 0; }
 .fact {
   display: grid;
@@ -570,27 +573,14 @@ a { color: inherit; text-underline-offset: 0.2em; }
   .story-page { max-width: 1450px; padding-inline: clamp(28px, 5vw, 85px); }
   .story-grid {
     min-height: calc(100svh - 54px);
-    align-content: center;
     grid-template-columns: minmax(0, 1.16fr) minmax(0, 1fr);
-    grid-template-rows: auto auto auto auto auto;
-    grid-template-areas:
-      'visual .'
-      'visual header'
-      'visual title'
-      'visual controls'
-      'visual .';
-    gap: clamp(13px, 2vh, 24px) clamp(26px, 4.8vw, 84px);
-    padding-top: 24px;
-  }
-  .step-comparison .story-grid {
-    align-content: start;
     grid-template-rows: auto auto auto minmax(0, 1fr);
     grid-template-areas: 'visual header' 'visual title' 'visual controls' 'visual .';
+    gap: clamp(13px, 2vh, 24px) clamp(26px, 4.8vw, 84px);
     padding-top: clamp(30px, 13svh, 117px);
   }
-  .step-comparison .story-visual { align-self: start; }
-  .step-comparison .story-header { padding-top: clamp(16px, 12svh, 108px); }
-  .story-visual { align-self: center; gap: clamp(32px, 5.5vw, 80px); }
+  .story-grid .story-header { padding-top: clamp(16px, 12svh, 108px); }
+  .story-visual { gap: clamp(12px, 2vh, 24px); }
   .story-header { font-size: clamp(11px, 1vw, 15px); }
   .story-heading { font-size: clamp(28px, 3.25vw, 53px); text-wrap: pretty; }
   .step-result .story-heading { font-size: clamp(26px, 3vw, 45px); }

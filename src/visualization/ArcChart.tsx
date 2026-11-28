@@ -4,7 +4,7 @@ import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, closingBand, comparisonHeight, offArcLayout, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, closingBand, offArcLayout, placementBand,
   readerOnArc, scoreBand, scoreDivider, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
@@ -13,7 +13,6 @@ interface Props {
   dots: Dot[];
   score: Score | null;
   highlightedIds: ReadonlySet<string> | null;
-  comparison: boolean;
   result: { question: StoryQuestion; choice: Choice; alignment: AnswerAlignment } | null;
   offArc?: { count: number; answerShare?: number | null };
   understandingCircle?: { share: string | null; countries: number };
@@ -52,7 +51,7 @@ export function ReaderGlyph({ score }: { score: Score | null }) {
   </>;
 }
 
-export function ArcChart({ dots, score, highlightedIds, comparison, result, offArc,
+export function ArcChart({ dots, score, highlightedIds, result, offArc,
   understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
@@ -167,7 +166,7 @@ export function ArcChart({ dots, score, highlightedIds, comparison, result, offA
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
         + (offArcCount ? ' ' + offArcCount + ' yellow dots in the open space represent the weighted share without a mark.' : '')}>
       <div className="chart-surface">
-        <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${comparison ? comparisonHeight : viewBox.height}`} aria-hidden="true">
+        <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${viewBox.height}`} aria-hidden="true">
           <g className={groups || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
             {sides.map(side => <path key={side} className={`placement-band ${side}${showPlacementHint ? ' is-unplaced' : ''}`} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && <>

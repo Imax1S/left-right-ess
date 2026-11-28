@@ -4,9 +4,8 @@ import type { Choice, Dot, Question, Score, Side } from '../domain/model.ts';
 export interface Point { x: number; y: number }
 interface PlacedDot extends Point { person: Dot; r: number }
 
-export const viewBox = { width: 400, height: 242 };
-export const comparisonHeight = 264;
-export const circleCentre: Point = { x: viewBox.width / 2, y: comparisonHeight / 2 };
+export const viewBox = { width: 400, height: 264 };
+export const circleCentre: Point = { x: viewBox.width / 2, y: viewBox.height / 2 };
 export const circleRadii = { outer: 124, inner: 82 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
