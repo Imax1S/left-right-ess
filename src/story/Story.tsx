@@ -192,21 +192,21 @@ export function Story({ data, showMethod }: { data: StoryData; showMethod: boole
       </header>
       <h1 id="story-heading" tabIndex={-1} ref={headingRef} className="story-heading">{heading}</h1>
       <div className="story-visual">
+        <div className="story-facts">
+          {hasVotingCardSlot
+            ? <div className={showVotingCards ? 'facts voting-cards is-visible' : 'facts voting-cards'} aria-hidden={!showVotingCards}>
+              <Fact value={data.questions.findIndex(item => item.id === 'vote') + 1}
+                caption={`Of ${data.questions.length} questions`} />
+              <Fact value="Voting" caption="Topic" />
+            </div>
+            : cards && <div className="facts">{cards}</div>}
+        </div>
         <div className="story-plot">
           <ArcChart dots={data.dots} score={score} highlightedIds={matches && new Set(matches.map(dot => dot.id))}
             result={result} offArc={offArc} understandingCircle={understandingCircle}
             onPlace={step === 'scale' ? place : undefined} />
           {step === 'scale' && <ScaleControls score={score} shown={shown} onPlace={place} />}
         </div>
-        {hasVotingCardSlot
-          ? <div className={showVotingCards ? 'voting-cards is-visible' : 'voting-cards'} aria-hidden={!showVotingCards}>
-            <div><div className="facts">
-              <Fact value={data.questions.findIndex(item => item.id === 'vote') + 1}
-                caption={`Of ${data.questions.length} questions`} />
-              <Fact value="Voting" caption="Topic" />
-            </div></div>
-          </div>
-          : cards && <div className="facts">{cards}</div>}
       </div>
       <div className="story-controls">{controls}</div>
     </section>
