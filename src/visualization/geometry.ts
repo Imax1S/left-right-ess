@@ -5,11 +5,13 @@ export interface Point { x: number; y: number }
 interface PlacedDot extends Point { person: Dot; r: number }
 
 export const viewBox = { width: 400, height: 264 };
-export const circleCentre: Point = { x: viewBox.width / 2, y: viewBox.height / 2 };
-export const circleRadii = { outer: 124, inner: 82 };
 const origin = { x: 200, y: 190 };
 const outer = 188;
 const inner = 73;
+const middle = (outer + inner) / 2;
+export const circleCentre: Point = origin;
+export const circleRadii = { outer, inner };
+export const circleViewBox = { ...viewBox, height: circleCentre.y + outer + 8 };
 const readerClearance = 21;
 export const unplacedMarker: Point = { x: origin.x, y: 219 };
 const sectorAngle = Math.PI / scores.length;
@@ -35,22 +37,26 @@ export function offArcLayout(count: number) {
 }
 
 export function circleLayout(dots: readonly Dot[], offArcIds: readonly string[] = []) {
-  const marker = { x: circleCentre.x + 105, y: circleCentre.y };
+  const edgeInset = (outer - inner) / 6;
+  const rings = [outer - edgeInset, middle, inner + edgeInset] as const;
+  const marker = { x: circleCentre.x + middle, y: circleCentre.y };
   const gap = 0.3;
   const sweep = 2 * Math.PI - 2 * gap;
   const total = dots.length + offArcIds.length;
-  const outerCount = Math.round(total * 0.55);
-  const sizes = [outerCount, total - outerCount];
+  const radiusSum = rings[0] + rings[1] + rings[2];
+  const outerCount = Math.round(total * rings[0] / radiusSum);
+  const innerCount = Math.round(total * rings[2] / radiusSum);
+  const sizes = [outerCount, total - outerCount - innerCount, innerCount];
   let nextDot = 0;
   let nextOffArc = 0;
+  let position = 0;
   const positions = new Map<string, Point & { r: number }>();
-  for (const [index, radius] of [113, 91].entries()) {
+  for (const [index, radius] of rings.entries()) {
     const count = sizes[index];
     if (!count) continue;
     const r = Math.min(5, radius * Math.sin(sweep / (2 * Math.max(count, 2))) * 0.77);
-    for (let slot = 0; slot < count; slot++) {
+    for (let slot = 0; slot < count; slot++, position++) {
       const angle = gap + sweep * (slot + 0.5) / count;
-      const position = slot + (index === 0 ? 0 : outerCount);
       const offArc = Math.floor((position + 1) * offArcIds.length / total) > nextOffArc;
       const id = offArc ? offArcIds[nextOffArc++] : dots[nextDot++].id;
       positions.set(id, {
@@ -103,21 +109,9 @@ export function placementBand(side: Side) {
   return arcBand(...placementAngles(side));
 }
 
-export function closingBand(side: Side, progress: number) {
-  const [start, end] = placementAngles(side);
-  const radiusProgress = progress * (2 - progress);
-  const outerRadius = outer + (circleRadii.outer - outer) * radiusProgress;
-  const startTop = origin.y - outer;
-  const endTop = circleCentre.y - circleRadii.outer;
-  const centreY = outerRadius + startTop + (endTop - startTop) * progress;
-  const innerRadius = inner + (circleRadii.inner - inner) * progress;
-  // Keep the crown at the top while both ends sweep toward the bottom.
-  const point = (angle: number, radius: number) => {
-    const swept = Math.PI / 2 + (angle - Math.PI / 2) * (1 + progress);
-    return `${origin.x - Math.cos(swept) * radius} ${centreY - Math.sin(swept) * radius}`;
-  };
-  return `M ${point(start, outerRadius)} A ${outerRadius} ${outerRadius} 0 0 1 ${point(end, outerRadius)}
-    L ${point(end, innerRadius)} A ${innerRadius} ${innerRadius} 0 0 0 ${point(start, innerRadius)} Z`;
+export function closingArc(side: 'left' | 'right') {
+  const startX = origin.x + (side === 'left' ? -middle : middle);
+  return `M ${startX} ${origin.y} A ${middle} ${middle} 0 0 ${side === 'left' ? 0 : 1} ${origin.x} ${origin.y + middle}`;
 }
 
 export function scoreSectorOutline(score: Score): Point[] {

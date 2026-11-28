@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { arcBand, arcLayout, answerLayout, circleLayout, closingBand, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
+import { arcBand, arcLayout, answerLayout, circleCentre, circleLayout, circleRadii, circleViewBox, closingArc, offArcLayout, readerOnArc, scoreFromArcPoint, unplacedMarker, viewBox } from '../src/visualization/geometry.ts';
 import { scores } from '../src/domain/model.ts';
 
 function question(id: string, neutral?: string) {
@@ -18,7 +18,9 @@ test('the closing circle retains every original dot and leaves space for the rea
   for (const id of [...dots.map(dot => dot.id), ...offArc]) {
     const { x, y, r } = circle.dots.get(id)!;
     occupied.add(x + ':' + y);
-    assert.ok(x >= r && x <= viewBox.width - r && y >= r && y <= viewBox.height - r);
+    assert.ok(x >= r && x <= circleViewBox.width - r && y >= r && y <= circleViewBox.height - r);
+    const distance = Math.hypot(x - circleCentre.x, y - circleCentre.y);
+    assert.ok(distance - r >= circleRadii.inner && distance + r <= circleRadii.outer);
     assert.ok(Math.hypot(x - circle.marker.x, y - circle.marker.y) >= r + 20);
   }
   assert.equal(occupied.size, dots.length + offArc.length);
@@ -39,16 +41,17 @@ test('the symbolic off-arc dots fit in one centered group inside the hollow', ()
   }
 });
 
-test('the ends of the arc sweep downward until they meet inside the chart', () => {
-  function ends(progress: number) {
-    const numbers = (side: 'left' | 'right') => closingBand(side, progress)
-      .match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number);
-    return [numbers('left').slice(0, 2), numbers('right').slice(7, 9)];
-  }
+test('the lower arcs follow the middle of the original band and meet at the bottom', () => {
+  const pathNumbers = (path: string) => path.match(/-?\d+(?:\.\d+)?(?:e[+-]?\d+)?/gi)!.map(Number);
+  const upper = pathNumbers(arcBand(0, Math.PI));
+  const radius = (upper[2] + upper[11]) / 2;
+  const x = (upper[0] + upper[7]) / 2;
+  const y = upper[1];
 
-  assert.deepEqual(ends(0).map(point => point.map(Math.round)), [[12, 190], [388, 190]]);
-  assert.ok(ends(0.5).every(([, y]) => y > 190 && y < viewBox.height));
-  assert.deepEqual(ends(1).map(point => point.map(Math.round)), [[200, 256], [200, 256]]);
+  assert.deepEqual(circleRadii, { outer: upper[2], inner: upper[11] });
+  assert.deepEqual(circleCentre, { x, y });
+  assert.deepEqual(pathNumbers(closingArc('left')), [x - radius, y, radius, radius, 0, 0, 0, x, y + radius]);
+  assert.deepEqual(pathNumbers(closingArc('right')), [x + radius, y, radius, radius, 0, 0, 1, x, y + radius]);
 });
 
 test('arc and all answer bands keep people in bounds without overlap', () => {

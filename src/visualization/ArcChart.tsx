@@ -4,7 +4,7 @@ import { scores, sideOf, sides } from '../domain/model.ts';
 import type { Choice, Dot, Score, Side, StoryQuestion } from '../domain/model.ts';
 import type { AnswerAlignment } from '../story/answerAlignment.ts';
 import {
-  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, closingBand, offArcLayout, placementBand,
+  answerLayout, arcBand, arcLayout, circleCentre, circleLayout, circleRadii, circleViewBox, closingArc, offArcLayout, placementBand,
   readerOnArc, scoreBand, scoreDivider, scoreFromArcPoint, scoreSectorOutline, unplacedMarker, viewBox,
 } from './geometry.ts';
 import type { Point } from './geometry.ts';
@@ -22,14 +22,13 @@ interface Props {
 type MotionStyle = CSSProperties & { '--delay'?: string };
 
 const fullArc = arcBand(0, Math.PI);
+const circleStageStyle = {
+  '--arc-ratio': `${viewBox.width} / ${viewBox.height}`,
+  '--circle-ratio': `${circleViewBox.width} / ${circleViewBox.height}`,
+} as CSSProperties;
 
-const closingBands = sides.map(side => {
-  const frames = Array.from({ length: 25 }, (_, index) => {
-    const time = index / 24;
-    return closingBand(side, time * time * (3 - 2 * time));
-  });
-  return { side, start: frames[0], values: frames.join(';') };
-});
+const closingThickness = circleRadii.outer - circleRadii.inner;
+const closingPaths = (['left', 'right'] as const).map(side => ({ side, path: closingArc(side) }));
 
 function moveTo({ x, y }: Point) {
   return `translate(${x}px, ${y}px)`;
@@ -55,7 +54,6 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
   understandingCircle, onPlace }: Props) {
   const svgRef = useRef<SVGSVGElement>(null);
   const markerRef = useRef<SVGGElement>(null);
-  const closureRef = useRef<SVGGElement>(null);
   const previousScore = useRef(score);
   const dragPlacement = useRef(false);
   const canPlace = onPlace !== undefined;
@@ -64,6 +62,7 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
   const choice = result?.choice;
   const destination = result?.alignment.score;
   const inCircle = understandingCircle !== undefined;
+  const bounds = inCircle ? circleViewBox : viewBox;
   const groups = useMemo(
     () => !inCircle && question && choice && destination !== undefined
       ? answerLayout(dots, question, choice, destination, arc.radius)
@@ -103,11 +102,6 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
     left: `${unplacedMarker.x / viewBox.width * 100}%`,
     top: `${unplacedMarker.y / viewBox.height * 100}%`,
   };
-
-  useLayoutEffect(() => {
-    if (!inCircle || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    closureRef.current?.querySelectorAll('animate').forEach(animation => animation.beginElement());
-  }, [inCircle]);
 
   useLayoutEffect(() => {
     const entering = previousScore.current === null && score !== null;
@@ -165,8 +159,8 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
       : 'Political self-placement of ' + dots.length + ' survey respondents. ' + (score === null
         ? 'Choose a sector for your mark.' : 'Your mark is ' + score + ' out of 10.')
         + (offArcCount ? ' ' + offArcCount + ' yellow dots in the open space represent the weighted share without a mark.' : '')}>
-      <div className="chart-surface">
-        <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${viewBox.width} ${viewBox.height}`} aria-hidden="true">
+      <div className="chart-surface" style={inCircle ? circleStageStyle : undefined}>
+        <svg ref={svgRef} className="arc-svg" viewBox={`0 0 ${bounds.width} ${bounds.height}`} aria-hidden="true">
           <g className={groups || circle ? 'chart-layer placement-canvas is-hidden' : 'chart-layer placement-canvas'}>
             {sides.map(side => <path key={side} className={`placement-band ${side}${showPlacementHint ? ' is-unplaced' : ''}`} d={placementBand(side)} fill={'var(--' + side + '-pale)'} />)}
             {showPlacementHint && <>
@@ -184,20 +178,26 @@ export function ArcChart({ dots, score, highlightedIds, result, offArc,
               <path key={option} d={path} className="answer-band" />)}
             {selectedBand && <path d={selectedBand.path} className="answer-band selected" />}
           </g>
-          {circle && <g ref={closureRef} className="arc-closure">
-            {closingBands.map(({ side, start, values }) =>
-              <path key={side} d={start} fill={'var(--' + side + '-pale)'}>
-                <animate attributeName="d" values={values} calcMode="linear" begin="indefinite" dur="900ms" fill="freeze" />
-              </path>)}
+          {circle && <g className="arc-closure">
+            <g className="closure-lower" fill="none">
+              {closingPaths.map(({ side, path }) => <g key={side}>
+                <path d={path} pathLength="1" strokeWidth={closingThickness + 1.4} className="closure-edge" />
+                <path d={path} pathLength="1" strokeWidth={closingThickness - 1.4} stroke={'var(--' + side + '-pale)'} />
+              </g>)}
+            </g>
+            <g className="closure-upper">
+              {sides.map(side => <path key={side} d={placementBand(side)} className="placement-band" fill={'var(--' + side + '-pale)'} />)}
+            </g>
           </g>}
           {circle && <g className="circle-canvas">
             <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.outer} className="circle-outline" />
             <circle cx={circleCentre.x} cy={circleCentre.y} r={circleRadii.inner} className="circle-core" />
-            {understandingShare && <text x={circleCentre.x} y={circleCentre.y - 7} className="circle-number">
+            {understandingShare && <text x={circleCentre.x} y={circleCentre.y - 16} className="circle-number">
               {understandingShare}
               <tspan x={circleCentre.x} dy="18" className="circle-label">said the description was</tspan>
-              <tspan x={circleCentre.x} dy="13" className="circle-label">somewhat to very much like them</tspan>
-              <tspan x={circleCentre.x} dy="14" className="circle-scope">Across {understandingCircle?.countries} countries in this story</tspan>
+              <tspan x={circleCentre.x} dy="13" className="circle-label">somewhat to very much</tspan>
+              <tspan x={circleCentre.x} dy="13" className="circle-label">like them</tspan>
+              <tspan x={circleCentre.x} dy="14" className="circle-scope">Across {understandingCircle?.countries} countries</tspan>
             </text>}
           </g>}
           {dots.map((person, index) => {
